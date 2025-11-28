@@ -1,16 +1,28 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { supabase } from "../../../../lib/supabaseClient";
 
 export default function NovaObraPage() {
-  const params = useSearchParams();
   const router = useRouter();
 
-  const profissionalId = params.get("id");
-  const apelido = params.get("apelido") || "profissional";
+  const [profissionalId, setProfissionalId] = useState<string | null>(null);
+  const [apelido, setApelido] = useState("profissional");
+
+  // lê ?id= e ?apelido= da URL só no browser
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    const apelidoParam = params.get("apelido");
+
+    if (id) setProfissionalId(id);
+    if (apelidoParam) setApelido(apelidoParam);
+  }, []);
+
 
   const [titulo, setTitulo] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");

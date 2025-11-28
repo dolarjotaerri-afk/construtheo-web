@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
+
 
 const steps = ["Dados básicos", "Contato", "Localização"];
 
@@ -99,8 +100,16 @@ const areasConfig: Record<
 };
 
 export default function CadastroProfissionalPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+const router = useRouter();
+
+// se você realmente precisa pegar algo da URL tipo ?funcao=...
+const [query, setQuery] = useState<URLSearchParams | null>(null);
+
+useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  setQuery(new URLSearchParams(window.location.search));
+}, []);
 
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<string | null>(
     null
@@ -109,15 +118,28 @@ export default function CadastroProfissionalPage() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // estados para Auth
-  const [senha, setSenha] = useState("");
-  const [confirmarSenha, setConfirmarSenha] = useState("");
+// estados para Auth
+const [senha, setSenha] = useState("");
+const [confirmarSenha, setConfirmarSenha] = useState("");
 
-  const areaSlug = searchParams.get("area") || "geral";
+// estado para a área vinda da URL (?area=...)
+const [areaSlug, setAreaSlug] = useState<keyof typeof areasConfig>("geral");
 
-  const areaConfig = useMemo(() => {
-    return areasConfig[areaSlug] ?? areasConfig["geral"];
-  }, [areaSlug]);
+// lê ?area=... da URL só no browser
+useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  const params = new URLSearchParams(window.location.search);
+  const area = params.get("area");
+
+  if (area && area in areasConfig) {
+    setAreaSlug(area as keyof typeof areasConfig);
+  }
+}, []);
+
+const areaConfig = useMemo(() => {
+  return areasConfig[areaSlug] ?? areasConfig["geral"];
+}, [areaSlug]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

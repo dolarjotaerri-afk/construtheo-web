@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -12,9 +12,23 @@ const tipoLabels: Record<string, string> = {
 };
 
 export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const tipo = searchParams.get("tipo") || "cliente";
+const router = useRouter();
+
+// estado para o tipo de usuário
+const [tipo, setTipo] = useState<"cliente" | "empresa" | "profissional">("cliente");
+
+// lê o ?tipo=... da URL só no browser
+useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get("tipo");
+
+  if (t === "cliente" || t === "empresa" || t === "profissional") {
+    setTipo(t);
+  }
+}, []);
+
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");

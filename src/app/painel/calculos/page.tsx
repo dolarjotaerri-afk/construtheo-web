@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 
 type CalcItem = {
   nome: string;
@@ -10,12 +10,22 @@ type CalcItem = {
 };
 
 export default function PainelCalculosPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
 
-  const tipo = searchParams.get("tipo"); // sem default agora
+  // estado para o tipo da operação (cliente/profissional)
+  const [tipo, setTipo] = useState<string | null>(null);
 
-  // CÁLCULOS GRATUITOS (BÁSICOS)
+  // lê ?tipo= da URL no browser
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const tipoParam = params.get("tipo");
+
+    if (tipoParam) setTipo(tipoParam);
+  }, []);
+
+  // lista de cálculos básicos (gratuitos)
   const calculosGratis: CalcItem[] = [
     { nome: "Calcular Concreto", rota: "/calc/concreto" },
     { nome: "Calcular Blocos", rota: "/calc/blocos" },
@@ -27,22 +37,22 @@ export default function PainelCalculosPage() {
     { nome: "Calcular Encanamento", rota: "/calc/encanamento" },
   ];
 
-  // Quebra em páginas de 4 itens
+  // Separar em páginas de 4 itens (carrossel)
   const paginas: CalcItem[][] = [];
   for (let i = 0; i < calculosGratis.length; i += 4) {
     paginas.push(calculosGratis.slice(i, i + 4));
   }
 
-  // LISTA QUE PASSA NO CARROSSEL PRO
+  // carrosel PRO
   const calculosProCarrossel = [
     "Calcular Ferro / Aço",
-    "Calcular Formas (Madeira)",
+    "Calcular Formas",
     "Calcular Pilar",
     "Calcular Viga",
     "Calcular Laje",
     "Calcular Tijolos",
     "Reboco / Emboço",
-    "Calcular Piso / Porcelanato",
+    "Calcular Piso",
     "Calcular Rejunte",
     "Calcular Pintura",
     "Impermeabilização",
@@ -59,15 +69,11 @@ export default function PainelCalculosPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Função do botão voltar
+  // botão voltar
   const handleVoltar = () => {
-    if (tipo === "profissional") {
-      router.push("/painel/profissional");
-    } else if (tipo === "cliente") {
-      router.push("/painel/cliente");
-    } else {
-      router.back(); // fallback: volta pra página anterior
-    }
+    if (tipo === "profissional") router.push("/painel/profissional");
+    else if (tipo === "cliente") router.push("/painel/cliente");
+    else router.back();
   };
 
   return (
@@ -89,7 +95,7 @@ export default function PainelCalculosPage() {
           boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
         }}
       >
-        {/* BOTÃO VOLTAR (AGORA DINÂMICO) */}
+        {/* botão voltar */}
         <div style={{ marginBottom: "20px", display: "flex" }}>
           <button
             type="button"
@@ -105,8 +111,6 @@ export default function PainelCalculosPage() {
               fontSize: "0.78rem",
               fontWeight: 500,
               color: "#2563EB",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-              textDecoration: "none",
               cursor: "pointer",
             }}
           >
@@ -114,18 +118,11 @@ export default function PainelCalculosPage() {
           </button>
         </div>
 
-        {/* HEADER */}
+        {/* header */}
         <div style={{ marginBottom: "20px" }}>
-          <h1
-            style={{
-              fontSize: "1.45rem",
-              fontWeight: 700,
-              color: "#111827",
-            }}
-          >
+          <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#111827" }}>
             Cálculos da sua Obra
           </h1>
-
           <p
             style={{
               fontSize: "0.85rem",
@@ -133,13 +130,12 @@ export default function PainelCalculosPage() {
               marginTop: "4px",
             }}
           >
-            Aqui você encontra os cálculos básicos liberados para qualquer
-            cliente e também os cálculos avançados do{" "}
-            <strong>ConstruThéo Pro</strong>, pensados para quem quer ir além.
+            Cálculos básicos liberados e os avançados no{" "}
+            <strong>ConstruThéo Pro</strong>.
           </p>
         </div>
 
-        {/* BÁSICOS (GRATUITO) – 4 POR PÁGINA */}
+        {/* básicos */}
         <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
@@ -149,7 +145,7 @@ export default function PainelCalculosPage() {
               marginBottom: "8px",
             }}
           >
-            Cálculos básicos da obra 
+            Cálculos básicos
           </h2>
 
           <div
@@ -188,7 +184,6 @@ export default function PainelCalculosPage() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      transition: "0.2s ease",
                     }}
                   >
                     <span style={{ fontWeight: 500 }}>{item.nome}</span>
@@ -202,41 +197,16 @@ export default function PainelCalculosPage() {
           </div>
         </section>
 
-        {/* SEPARADOR */}
-        <hr
-          style={{
-            border: "none",
-            borderTop: "1px dashed #E5E7EB",
-            margin: "8px 0 18px",
-          }}
-        />
-
-        {/* CARD DO PRO */}
+        {/* PRO */}
         <div
           style={{
-            position: "relative",
             background: "linear-gradient(135deg, #0f172a, #1e293b)",
             padding: "24px",
             borderRadius: "22px",
-            overflow: "hidden",
             color: "white",
             textAlign: "left",
           }}
         >
-          {/* Cadeado grande de fundo (emoji) */}
-          <div
-            style={{
-              position: "absolute",
-              right: "-20px",
-              top: "-40px",
-              fontSize: "7rem",
-              opacity: 0.1,
-              pointerEvents: "none",
-            }}
-          >
-            🔒
-          </div>
-
           <h2
             style={{
               fontSize: "1.1rem",
@@ -254,11 +224,9 @@ export default function PainelCalculosPage() {
               marginBottom: "14px",
             }}
           >
-            Desbloqueie os cálculos avançados da obra e tenha acesso completo
-            aos cálculos estruturais e de acabamento.
+            Desbloqueie todos cálculos avançados.
           </p>
 
-          {/* Carrossel Pro */}
           <div
             style={{
               height: "32px",
@@ -267,27 +235,15 @@ export default function PainelCalculosPage() {
               fontSize: "1.05rem",
               fontWeight: 700,
               color: "#FACC15",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
               textAlign: "center",
             }}
           >
-            <div
-              key={index}
-              style={{
-                width: "100%",
-                transition: "0.3s",
-              }}
-            >
-              {calculosProCarrossel[index]}
-            </div>
+            {calculosProCarrossel[index]}
           </div>
 
           <button
             disabled
             style={{
-              marginTop: "10px",
               width: "100%",
               padding: "10px 0",
               borderRadius: "14px",
@@ -299,7 +255,7 @@ export default function PainelCalculosPage() {
               opacity: 0.8,
             }}
           >
-            Disponível em breve
+            Assine em breve
           </button>
         </div>
       </div>
