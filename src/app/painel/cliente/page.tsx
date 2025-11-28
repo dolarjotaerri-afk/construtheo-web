@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image"; // 👈 IMPORTANTE pro mascote
 import { supabase } from "../../../lib/supabaseClient";
 
 type DemoCliente = {
@@ -226,21 +227,47 @@ export default function PainelClientePage() {
             </p>
           </div>
 
+          {/* Avatar mascote mais clean, sem fundo laranja */}
           <div
             style={{
-              padding: "8px 10px",
+              width: 56,
+              height: 56,
               borderRadius: "999px",
               background: "#EFF6FF",
-              fontSize: "0.75rem",
-              color: "#2563EB",
-              fontWeight: 600,
+              border: "1px solid #DBEAFE",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
             }}
-          
-          <p>
+          >
+            <Image
+              src="/mascote-pedreiro.png"
+              alt="Mascote ConstruThéo"
+              width={40}
+              height={40}
+              style={{ objectFit: "contain" }}
+            />
+          </div>
+        </header>
+
+        {/* CARD DADOS DO CLIENTE */}
+        <section
+          style={{
+            marginBottom: "18px",
+            padding: "14px 14px",
+            borderRadius: "18px",
+            border: "1px solid #E5E7EB",
+            background: "#F9FAFB",
+            fontSize: "0.8rem",
+            color: "#374151",
+          }}
+        >
+          <p style={{ marginBottom: "4px" }}>
             <strong>Localização:</strong>{" "}
             {cliente?.localizacao || "Não informado"}
           </p>
-          <p>
+          <p style={{ marginBottom: "4px" }}>
             <strong>WhatsApp:</strong> {cliente?.whatsapp}
           </p>
           <p>
@@ -566,7 +593,7 @@ export default function PainelClientePage() {
                 textDecoration: "none",
               }}
             >
-              Uma Empresa 
+              Uma Empresa
             </Link>
             <Link
               href="/cadastro/profissional"
@@ -580,7 +607,7 @@ export default function PainelClientePage() {
                 textDecoration: "none",
               }}
             >
-              Um Profissional 
+              Um Profissional
             </Link>
           </div>
         </section>
