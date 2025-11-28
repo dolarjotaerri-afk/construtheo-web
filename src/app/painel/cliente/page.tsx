@@ -235,23 +235,29 @@ export default function PainelClientePage() {
               color: "#2563EB",
               fontWeight: 600,
             }}
+          {/* Avatar mascote mais clean, sem fundo laranja */}
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "999px",
+              background: "#EFF6FF",
+              border: "1px solid #DBEAFE",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+            }}
           >
-            Conta demo
+            <Image
+              src="/mascote-pedreiro.png"
+              alt="Mascote ConstruThéo"
+              width={40}
+              height={40}
+              style={{ objectFit: "contain" }}
+            />
           </div>
-        </header>
 
-        {/* INFO RESUMO */}
-        <section
-          style={{
-            marginBottom: "18px",
-            padding: "12px 14px",
-            borderRadius: "16px",
-            background: "#F9FAFB",
-            border: "1px solid #E5E7EB",
-            fontSize: "0.8rem",
-            color: "#4B5563",
-          }}
-        >
           <p>
             <strong>Localização:</strong>{" "}
             {cliente?.localizacao || "Não informado"}
