@@ -1,5 +1,5 @@
 // src/lib/clienteService.ts
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 
 export type NovoCliente = {
   nome: string;
