@@ -561,7 +561,7 @@ export default function PainelClientePage() {
           }}
         >
           <p style={{ marginBottom: "8px", fontWeight: 500 }}>
-            Próximos testes:
+            Quero Cadastrar:
           </p>
           <div
             style={{
@@ -582,7 +582,7 @@ export default function PainelClientePage() {
                 textDecoration: "none",
               }}
             >
-              Cadastrar empresa demo
+              Uma Empresa 
             </Link>
             <Link
               href="/cadastro/profissional"
@@ -596,7 +596,7 @@ export default function PainelClientePage() {
                 textDecoration: "none",
               }}
             >
-              Cadastrar profissional demo
+              Um Profissional 
             </Link>
           </div>
         </section>
