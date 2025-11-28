@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../../../../lib/supabaseClient";
 
 export default function NovaObraAndamentoPage() {
   const params = useSearchParams();
