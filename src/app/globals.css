@@ -2,12 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Garantir que nada fique com margem estranha */
+/* IMPORTANTE: evitar overflow horizontal em qualquer tela */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Garantir que nada fique com margem estranha nem ultrapasse a largura da tela */
 html,
 body {
   margin: 0;
   padding: 0;
   height: 100%;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }/* =======================
    Tela de Login ConstruThéo
    ======================= */
