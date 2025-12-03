@@ -69,11 +69,56 @@ export default function PainelCalculosPage() {
     return () => clearInterval(id);
   }, []);
 
-  // botão voltar
+  // botão voltar -> detecta painel certo pelo localStorage
   const handleVoltar = () => {
-    if (tipo === "profissional") router.push("/painel/profissional");
-    else if (tipo === "cliente") router.push("/painel/cliente");
-    else router.back();
+    if (typeof window === "undefined") {
+      router.push("/login");
+      return;
+    }
+
+    const profStr = localStorage.getItem("construtheo_profissional_atual");
+    const clienteStr = localStorage.getItem("construtheo_cliente_atual");
+    const empresaStr = localStorage.getItem("construtheo_empresa_atual");
+
+    // PROFISSIONAL
+    if (profStr) {
+      try {
+        const prof = JSON.parse(profStr);
+        const id = prof?.id;
+        const apelido = encodeURIComponent(prof?.apelido || "profissional");
+
+        if (id) {
+          router.push(`/painel/profissional?id=${id}&apelido=${apelido}`);
+        } else {
+          router.push("/painel/profissional");
+        }
+        return;
+      } catch {
+        router.push("/painel/profissional");
+        return;
+      }
+    }
+
+    // CLIENTE
+    if (clienteStr) {
+      router.push("/painel/cliente");
+      return;
+    }
+
+    // EMPRESA
+    if (empresaStr) {
+      router.push("/painel/empresa");
+      return;
+    }
+
+    // Fallback usando ?tipo=
+    if (tipo === "profissional") {
+      router.push("/painel/profissional");
+    } else if (tipo === "cliente") {
+      router.push("/painel/cliente");
+    } else {
+      router.push("/login");
+    }
   };
 
   return (
@@ -176,7 +221,7 @@ export default function PainelCalculosPage() {
                     style={{
                       padding: "14px",
                       borderRadius: "16px",
-                      border: "1px solid #E5E7EB",
+                      border: "1px solid "#E5E7EB",
                       background: "#F8FAFC",
                       textDecoration: "none",
                       fontSize: "0.9rem",
