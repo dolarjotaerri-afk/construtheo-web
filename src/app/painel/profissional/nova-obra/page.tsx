@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useMemo, useState, FormEvent } from "react";
 import { supabase } from "../../../../lib/supabaseClient";
 
 export default function NovaObraPage() {
@@ -40,6 +40,14 @@ export default function NovaObraPage() {
 
     setCarregandoProfissional(false);
   }, []);
+
+  // URL do painel do profissional (reaproveitada no voltar e no pós-salvar)
+  const painelProfissionalUrl = useMemo(() => {
+    if (!profissionalId) return "/painel/profissional";
+    return `/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
+      apelido
+    )}`;
+  }, [profissionalId, apelido]);
 
   const [titulo, setTitulo] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
@@ -130,13 +138,9 @@ export default function NovaObraPage() {
       setImagemUrl("");
       setArquivo(null);
 
-      // Redireciona para o painel do profissional (depois de um tempinho opcional)
+      // Redireciona para o painel do profissional
       setTimeout(() => {
-        router.push(
-          `/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
-            apelido
-          )}`
-        );
+        router.push(painelProfissionalUrl);
       }, 600);
     } catch (err: any) {
       console.error(err);
@@ -232,13 +236,7 @@ export default function NovaObraPage() {
         {/* VOLTAR PARA O PAINEL - TOPO */}
         <button
           type="button"
-          onClick={() =>
-            router.push(
-              `/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
-                apelido
-              )}`
-            )
-          }
+          onClick={() => router.push(painelProfissionalUrl)}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -247,7 +245,7 @@ export default function NovaObraPage() {
             borderRadius: "999px",
             border: "1px solid #E5E7EB",
             background: "#F9FAFB",
-            fontSize: "14px", // ≈ 0.875rem
+            fontSize: "16px",
             fontWeight: 500,
             color: "#2563EB",
             marginBottom: "14px",
@@ -283,7 +281,12 @@ export default function NovaObraPage() {
           </p>
         </header>
 
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            fontSize: 16, // ajuda a evitar zoom automático no iPhone
+          }}
+        >
           {/* TÍTULO / DESCRIÇÃO CURTA */}
           <div style={{ marginBottom: "14px" }}>
             <label
