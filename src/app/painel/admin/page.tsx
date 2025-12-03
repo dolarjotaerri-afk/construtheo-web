@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { supabase } from "../../../lib/supabaseClient";
 
 type Metrica = {
   id: number;
@@ -20,7 +21,7 @@ type Atividade = {
 };
 
 type Pendencia = {
-  id: number;
+  id: string; // id da tabela (uuid)
   tipo: "profissional" | "empresa";
   nome: string;
   detalhe: string;
@@ -33,11 +34,7 @@ type Alerta = {
   descricao: string;
 };
 
-// ---------- BASE PARA DEPOIS VIRAR DADOS DO BACKEND ----------
-
-// Estes números por enquanto são MOCK.
-// Depois você pode puxar do Supabase / API e só trocar aqui
-// ou transformar em props / chamadas assíncronas.
+// ---------- MOCKS (podem virar dados reais depois) ----------
 
 const totalClientes = 1247;
 const onlineClientes = 18;
@@ -48,12 +45,10 @@ const onlineProfissionais = 9;
 const totalEmpresas = 57;
 const onlineEmpresas = 4;
 
-const totalUsuarios =
-  totalClientes + totalProfissionais + totalEmpresas;
+const totalUsuarios = totalClientes + totalProfissionais + totalEmpresas;
 const onlineTotal =
   onlineClientes + onlineProfissionais + onlineEmpresas;
 
-// Métricas principais do topo
 const metricasResumo: Metrica[] = [
   {
     id: 1,
@@ -116,27 +111,6 @@ const atividadesRecentes: Atividade[] = [
   },
 ];
 
-const pendenciasVerificacao: Pendencia[] = [
-  {
-    id: 1,
-    tipo: "profissional",
-    nome: "Carlos Pedreiro",
-    detalhe: "Solicitou verificação de identidade e endereço",
-  },
-  {
-    id: 2,
-    tipo: "empresa",
-    nome: "Usina ConcreMax",
-    detalhe: "Aguardando validação de CNPJ e contrato",
-  },
-  {
-    id: 3,
-    tipo: "profissional",
-    nome: "Mariana Eletricista",
-    detalhe: "Denúncia resolvida, revisar histórico antes de liberar",
-  },
-];
-
 const alertasSeguranca: Alerta[] = [
   {
     id: 1,
@@ -179,6 +153,102 @@ const scrollCarrossel = (
 export default function PainelAdminPage() {
   const atividadesRef = useRef<HTMLDivElement | null>(null);
   const pendenciasRef = useRef<HTMLDivElement | null>(null);
+
+  const [pendencias, setPendencias] = useState<Pendencia[]>([]);
+  const [carregandoPendencias, setCarregandoPendencias] =
+    useState(false);
+
+  // Carrega pendências reais do Supabase
+  useEffect(() => {
+    const carregarPendencias = async () => {
+      setCarregandoPendencias(true);
+      try {
+        // PROFISSIONAIS pendentes
+        const { data: profs, error: erroProfs } = await supabase
+          .from("profissionais")
+          .select("id, nome, area, funcao, localizacao, whatsapp, status")
+          .eq("status", "pendente")
+          .limit(50);
+
+        if (erroProfs) {
+          console.error("Erro ao buscar profissionais pendentes:", erroProfs);
+        }
+
+        const pendProfs: Pendencia[] =
+          (profs || []).map((p: any) => ({
+            id: p.id,
+            tipo: "profissional",
+            nome: p.nome || "Profissional sem nome",
+            detalhe: [
+              p.funcao,
+              p.area,
+              p.localizacao,
+              p.whatsapp && `WhatsApp: ${p.whatsapp}`,
+            ]
+              .filter(Boolean)
+              .join(" • "),
+          })) ?? [];
+
+        // EMPRESAS pendentes
+        const { data: emps, error: erroEmps } = await supabase
+          .from("empresas")
+          .select("id, nome, tipo, localizacao, whatsapp, status")
+          .eq("status", "pendente")
+          .limit(50);
+
+        if (erroEmps) {
+          console.error("Erro ao buscar empresas pendentes:", erroEmps);
+        }
+
+        const pendEmps: Pendencia[] =
+          (emps || []).map((e: any) => ({
+            id: e.id,
+            tipo: "empresa",
+            nome: e.nome || "Empresa sem nome",
+            detalhe: [
+              e.tipo,
+              e.localizacao,
+              e.whatsapp && `WhatsApp: ${e.whatsapp}`,
+            ]
+              .filter(Boolean)
+              .join(" • "),
+          })) ?? [];
+
+        setPendencias([...pendProfs, ...pendEmps]);
+      } catch (err) {
+        console.error("Erro geral ao carregar pendências:", err);
+      } finally {
+        setCarregandoPendencias(false);
+      }
+    };
+
+    carregarPendencias();
+  }, []);
+
+  // Atualiza status (aprovar/bloquear)
+  const atualizarStatusPendencia = async (
+    pendencia: Pendencia,
+    novoStatus: "aprovado" | "bloqueado"
+  ) => {
+    const tabela =
+      pendencia.tipo === "profissional" ? "profissionais" : "empresas";
+
+    const { error } = await supabase
+      .from(tabela)
+      .update({ status: novoStatus })
+      .eq("id", pendencia.id);
+
+    if (error) {
+      console.error("Erro ao atualizar status:", error);
+      alert("Não foi possível atualizar. Tente novamente.");
+      return;
+    }
+
+    // remove da lista local
+    setPendencias((prev) =>
+      prev.filter((p) => p.id !== pendencia.id)
+    );
+  };
 
   return (
     <main
@@ -364,7 +434,7 @@ export default function PainelAdminPage() {
           </div>
         </section>
 
-        {/* RESUMO RÁPIDO COM TOTAL E ONLINE AGORA */}
+        {/* RESUMO RÁPIDO */}
         <section>
           <h2
             style={{
@@ -436,7 +506,7 @@ export default function PainelAdminPage() {
           </div>
         </section>
 
-        {/* ATIVIDADES RECENTES (carrossel) */}
+        {/* ATIVIDADES RECENTES */}
         <section
           style={{
             padding: "10px 10px 12px",
@@ -672,7 +742,7 @@ export default function PainelAdminPage() {
             })}
           </div>
 
-          {/* Carrossel de pendências */}
+          {/* Carrossel de pendências (AGORA REAIS) */}
           <div
             ref={pendenciasRef}
             className="carrossel-admin"
@@ -684,7 +754,29 @@ export default function PainelAdminPage() {
               scrollbarWidth: "none",
             }}
           >
-            {pendenciasVerificacao.map((p) => (
+            {carregandoPendencias && pendencias.length === 0 && (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#7F1D1D",
+                }}
+              >
+                Carregando pendências...
+              </div>
+            )}
+
+            {!carregandoPendencias && pendencias.length === 0 && (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#7F1D1D",
+                }}
+              >
+                Nenhum cadastro pendente no momento 🎉
+              </div>
+            )}
+
+            {pendencias.map((p) => (
               <div
                 key={p.id}
                 style={{
@@ -741,6 +833,9 @@ export default function PainelAdminPage() {
                 >
                   <button
                     type="button"
+                    onClick={() =>
+                      atualizarStatusPendencia(p, "aprovado")
+                    }
                     style={{
                       flex: 1,
                       padding: "5px 0",
@@ -757,6 +852,9 @@ export default function PainelAdminPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() =>
+                      atualizarStatusPendencia(p, "bloqueado")
+                    }
                     style={{
                       flex: 1,
                       padding: "5px 0",
@@ -856,7 +954,9 @@ export default function PainelAdminPage() {
                   alignItems: "center",
                 }}
               >
-                <span>Gerenciar usuários (clientes, profissionais, empresas)</span>
+                <span>
+                  Gerenciar usuários (clientes, profissionais, empresas)
+                </span>
                 <span>→</span>
               </div>
             </Link>
