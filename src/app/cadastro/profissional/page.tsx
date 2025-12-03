@@ -556,14 +556,8 @@ export default function CadastroProfissionalPage() {
             />
           </div>
 
-          {/* Senhas */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "10px",
-            }}
-          >
+          {/* Senhas - agora EMPILHADAS */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <label
                 htmlFor="senha"
@@ -626,7 +620,7 @@ export default function CadastroProfissionalPage() {
             </div>
           </div>
 
-          {/* Função principal */}
+          {/* Função principal – input com sugestões */}
           <div
             style={{ display: "flex", flexDirection: "column", gap: "6px" }}
           >
@@ -637,7 +631,7 @@ export default function CadastroProfissionalPage() {
                 color: "#374151",
               }}
             >
-              Qual é sua principal função na obra?
+              O que você faz na obra?
             </label>
             <p
               style={{
@@ -645,53 +639,39 @@ export default function CadastroProfissionalPage() {
                 color: "#6B7280",
               }}
             >
-              Estas opções são específicas para{" "}
-              <strong>{areaConfig.label}</strong>. Escolha a opção que mais
-              combina com o seu trabalho.
+              Digite sua atividade principal (ex.: pedreiro, pintor, ajudante,
+              eletricista...). As sugestões abaixo são para{" "}
+              <strong>{areaConfig.label}</strong>.
             </p>
 
-            <div
+            <input
+              list="funcoes-obra"
+              value={funcaoSelecionada || ""}
+              onChange={(e) => setFuncaoSelecionada(e.target.value)}
+              placeholder="Ex.: pedreiro, ajudante, pintor..."
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "8px",
+                padding: "12px 14px",
+                borderRadius: "10px",
+                border: "1px solid #D1D5DB",
+                background: "#FFFFFF",
+                fontSize: "0.9rem",
+                outline: "none",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                transition: "all 0.2s",
               }}
-            >
-              {areaConfig.funcoes.map((funcao) => {
-                const ativa = funcaoSelecionada === funcao;
-                return (
-                  <button
-                    key={funcao}
-                    type="button"
-                    onClick={() =>
-                      setFuncaoSelecionada(ativa ? null : funcao)
-                    }
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "999px",
-                      border: ativa
-                        ? "1px solid #2563EB"
-                        : "1px solid #E5E7EB",
-                      background: ativa ? "#DBEAFE" : "#F9FAFB",
-                      fontSize: "0.8rem",
-                      fontWeight: ativa ? 600 : 500,
-                      color: ativa ? "#1D4ED8" : "#475569",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {funcao}
-                  </button>
-                );
-              })}
-            </div>
+            />
+
+            <datalist id="funcoes-obra">
+              {areaConfig.funcoes.map((funcao) => (
+                <option key={funcao} value={funcao} />
+              ))}
+            </datalist>
 
             {funcaoSelecionada === "Outros" && (
               <input
                 value={outrosDetalhe}
                 onChange={(e) => setOutrosDetalhe(e.target.value)}
-                placeholder="Descreva melhor sua função (ex: concreto armado, telhadista, etc.)"
+                placeholder="Explique melhor (ex.: telhadista, concreto armado, etc.)"
                 style={{
                   marginTop: "6px",
                   padding: "10px 12px",
