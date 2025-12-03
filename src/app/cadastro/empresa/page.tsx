@@ -180,35 +180,50 @@ export default function CadastroEmpresaPage() {
     }
   }
 
-  return (
-    <div
+    return (
+    <main
       style={{
-        maxWidth: "440px",
-        margin: "0 auto",
-        paddingTop: "12px",
-        paddingBottom: "32px",
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        paddingTop: "40px",
+        paddingBottom: "40px",
+        background: "#F1F5F9",
       }}
     >
-      {/* VOLTAR */}
-      <div style={{ textAlign: "center", marginBottom: "18px" }}>
-        <Link
-          href="/login"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "5px 12px",
-            borderRadius: "999px",
-            border: "1px solid #E5E7EB",
-            background: "#FFFFFF",
-            fontSize: "0.78rem",
-            fontWeight: 500,
-            color: "#2563EB",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
-            transition: "all 0.15s ease",
-          }}
-        >
-          ← Voltar para a tela de acesso
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 440,
+          background: "#FFFFFF",
+          borderRadius: 28,
+          padding: "26px 22px 28px",
+          boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* VOLTAR */}
+        <div style={{ textAlign: "center", marginBottom: "18px" }}>
+          <Link
+            href="/login"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "5px 12px",
+              borderRadius: "999px",
+              border: "1px solid #E5E7EB",
+              background: "#FFFFFF",
+              fontSize: "0.78rem",
+              fontWeight: 500,
+              color: "#2563EB",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            ← Voltar para a tela de acesso
         </Link>
       </div>
 
