@@ -1,494 +1,656 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
-import { supabase } from "../../../lib/supabaseClient";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "../../../lib/supabaseClient";
 
-export default function NovaObraPage() {
-  const router = useRouter();   // 🔥 OBRIGATÓRIO!!!
+type ProfissionalResumo = {
+  id?: string;
+  nome: string;
+  apelido?: string | null;
+  funcao?: string | null;
+  area?: string | null;
+  localizacao?: string | null;
+  whatsapp?: string;
+  email?: string;
+};
 
-  const [profissionalId, setProfissionalId] = useState<string | null>(null);
-  const [apelido, setApelido] = useState("profissional");
+type ObraGaleria = {
+  id: string;
+  titulo: string;
+  imagem_url: string | null;
+};
 
-useEffect(() => {
-  if (typeof window === "undefined") return;
+type ObraAndamento = {
+  id: string;
+  titulo: string;
+  cliente_nome: string | null;
+  dias_restantes: number | null;
+  previsao_fim: string | null;
+  imagem_url: string | null;
+};
 
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
-  const apelidoParam = params.get("apelido");
+export default function PainelProfissionalPage() {
+  const [profissional, setProfissional] = useState<ProfissionalResumo | null>(
+    null
+  );
 
-  if (id) setProfissionalId(id);
-  if (apelidoParam) setApelido(apelidoParam);
-}, []);
+  const [obrasGaleria, setObrasGaleria] = useState<ObraGaleria[]>([]);
+  const [carregandoObrasGaleria, setCarregandoObrasGaleria] = useState(false);
 
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [clienteNome, setClienteNome] = useState("");
-  const [diasRestantes, setDiasRestantes] = useState<number | "">("");
-  const [previsaoFim, setPrevisaoFim] = useState("");
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [salvarComoObraAndamento, setSalvarComoObraAndamento] =
-    useState(true);
+  const [obrasAndamento, setObrasAndamento] = useState<ObraAndamento[]>([]);
+  const [carregandoAndamento, setCarregandoAndamento] = useState(false);
 
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [sucesso, setSucesso] = useState<string | null>(null);
+  const [erroObras, setErroObras] = useState<string | null>(null);
 
-  if (!profissionalId) {
-    return (
-      <main
-        style={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-          paddingTop: "24px",
-          paddingBottom: "40px",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "440px",
-            background: "#FFFFFF",
-            borderRadius: "28px",
-            padding: "26px 22px",
-            boxShadow: "0 4px 14px rgba(15,23,42,0.08)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: "0.9rem",
-              color: "#B91C1C",
-              marginBottom: "12px",
-            }}
-          >
-            Erro: ID do profissional não informado na URL.
-          </p>
-          <Link
-            href="/painel/profissional"
-            style={{
-              textDecoration: "none",
-              color: "#2563EB",
-              fontSize: "0.9rem",
-            }}
-          >
-            Voltar ao painel
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  // 1) Carrega profissional do localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setErro(null);
-    setSucesso(null);
+    const raw = localStorage.getItem("construtheo_profissional_atual");
 
-    if (!arquivo) {
-      setErro("Selecione uma foto da obra.");
-      return;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as ProfissionalResumo;
+        setProfissional(parsed);
+        return;
+      } catch {
+        // cai no demo
+      }
     }
 
-    if (!titulo.trim()) {
-      setErro("Digite um título para a obra.");
-      return;
+    // fallback demo
+    setProfissional({
+      nome: "Profissional Demo",
+      apelido: "Pedreiro Demo",
+      funcao: "Pedreiro / Reforma",
+      area: "Construção civil",
+      localizacao: "Igaratá - SP",
+      whatsapp: "(11) 98888-0000",
+      email: "profissional@demo.com",
+    });
+  }, []);
+
+  const isDemo = !profissional?.id;
+  const nomeMostrado =
+    profissional?.apelido || profissional?.nome || "Profissional";
+  const funcaoMostrada =
+    profissional?.funcao || profissional?.area || "Profissional da construção";
+  const local =
+    profissional?.localizacao || "Localização não informada";
+
+  // 2) Carrega obras de galeria no Supabase
+  useEffect(() => {
+    if (!profissional?.id) return;
+
+    const profissionalId = profissional.id;
+
+    async function carregarObrasGaleria() {
+      setCarregandoObrasGaleria(true);
+      setErroObras(null);
+
+      const { data, error } = await supabase
+        .from("obras_profissionais")
+        .select("id, titulo, imagem_url")
+        .eq("profissional_id", profissionalId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) {
+        console.error("Erro ao carregar obras:", error.message);
+        setErroObras("Não foi possível carregar suas obras.");
+      } else {
+        setObrasGaleria((data as ObraGaleria[]) || []);
+      }
+
+      setCarregandoObrasGaleria(false);
     }
 
-    setCarregando(true);
+    carregarObrasGaleria();
+  }, [profissional?.id]);
 
-    try {
-      // ---------- 1. Upload da imagem no Storage ----------
-      const extensao = arquivo.name.split(".").pop() || "jpg";
-      const filePath = `${profissionalId}/${Date.now()}.${extensao}`;
+  // 3) Carrega obras em andamento
+  useEffect(() => {
+    if (!profissional?.id) return;
 
-      const { error: uploadError } = await supabase.storage
-        .from("galeria-profissional") // nome EXATO do seu bucket
-        .upload(filePath, arquivo, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+    const profissionalId = profissional.id;
 
-      if (uploadError) {
-        console.error("Erro upload:", uploadError.message);
-        throw new Error("Falha ao enviar imagem. Tente novamente.");
+    async function carregarAndamento() {
+      setCarregandoAndamento(true);
+
+      const { data, error } = await supabase
+        .from("obras_andamento_profissional")
+        .select(
+          "id, titulo, cliente_nome, dias_restantes, previsao_fim, imagem_url"
+        )
+        .eq("profissional_id", profissionalId)
+        .order("created_at", { ascending: true })
+        .limit(20);
+
+      if (error) {
+        console.error("Erro ao carregar obras em andamento:", error.message);
+      } else {
+        setObrasAndamento((data as ObraAndamento[]) || []);
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage
-        .from("galeria-profissional")
-        .getPublicUrl(filePath);
-
-      // ---------- 2. Inserir na tabela foto_galeria_profissional ----------
-      const { error: fotoError } = await supabase
-        .from("foto_galeria_profissional")
-        .insert({
-          profissional_id: profissionalId,
-          url: publicUrl,
-          descricao: descricao || titulo,
-        });
-
-      if (fotoError) {
-        console.error("Erro ao salvar foto:", fotoError.message);
-        throw new Error("Falha ao salvar a obra na galeria.");
-      }
-
-      // ---------- 3. (Opcional) criar registro em obras_profissionais ----------
-      if (salvarComoObraAndamento) {
-        const dias =
-          diasRestantes === "" ? null : Number(diasRestantes || 0);
-
-        const { error: obraError } = await supabase
-          .from("obras_profissionais")
-          .insert({
-            profissional_id: profissionalId,
-            titulo,
-            // não mandamos cliente_nome nem previsao_fim
-            dias_restantes: dias,
-          });
-
-        if (obraError) {
-          console.error("Erro ao salvar obra:", obraError.message);
-          // não dou throw pra não quebrar o fluxo todo
-        }
-      }
-
-      setSucesso("Obra cadastrada com sucesso!");
-      setTitulo("");
-      setDescricao("");
-      setClienteNome("");
-      setDiasRestantes("");
-      setPrevisaoFim("");
-      setArquivo(null);
-
-      // volta para o painel depois de salvar
-      router.push(
-        `/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
-          apelido
-        )}`
-      );
-    } catch (err: any) {
-      setErro(err.message || "Ocorreu um erro ao salvar a obra.");
-    } finally {
-      setCarregando(false);
+      setCarregandoAndamento(false);
     }
-  }
+
+    carregarAndamento();
+  }, [profissional?.id]);
 
   return (
     <main
       style={{
         width: "100%",
+        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
-        paddingTop: "24px",
-        paddingBottom: "40px",
+        alignItems: "center",
+        padding: "32px 12px",
+        background: "#DBEAFE",
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "440px",
+          maxWidth: 460,
           background: "#FFFFFF",
-          borderRadius: "28px",
-          padding: "26px 22px",
-          boxShadow: "0 4px 14px rgba(15,23,42,0.08)",
+          borderRadius: 28,
+          padding: "22px 18px 22px",
+          boxShadow: "0 15px 35px rgba(15,23,42,0.16)",
         }}
       >
-        <header style={{ marginBottom: "18px" }}>
-          <h1
-            style={{
-              fontSize: "1.4rem",
-              fontWeight: 700,
-              color: "#0F172A",
-              marginBottom: "4px",
-            }}
-          >
-            Nova obra
-          </h1>
-          <p style={{ fontSize: "0.9rem", color: "#64748B" }}>
-            Envie uma foto e os detalhes para registrar essa obra na sua
-            galeria.
-          </p>
-
-          <Link
-            href={`/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
-              apelido
-            )}`}
-            style={{
-              display: "inline-block",
-              marginTop: "10px",
-              fontSize: "0.82rem",
-              color: "#2563EB",
-              textDecoration: "none",
-            }}
-          >
-            ← Voltar para o painel
-          </Link>
-        </header>
-
-        {erro && (
-          <div
-            style={{
-              marginBottom: "12px",
-              padding: "8px 10px",
-              borderRadius: "10px",
-              background: "#FEE2E2",
-              color: "#B91C1C",
-              fontSize: "0.82rem",
-            }}
-          >
-            {erro}
-          </div>
-        )}
-
-        {sucesso && (
-          <div
-            style={{
-              marginBottom: "12px",
-              padding: "8px 10px",
-              borderRadius: "10px",
-              background: "#ECFDF3",
-              color: "#166534",
-              fontSize: "0.82rem",
-            }}
-          >
-            {sucesso}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "12px" }}>
-            <label
+        {/* TOPO */}
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 14,
+          }}
+        >
+          <div>
+            <p
               style={{
-                display: "block",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                marginBottom: "4px",
-                color: "#0F172A",
+                fontSize: "0.78rem",
+                color: "#6B7280",
+                marginBottom: 4,
               }}
             >
-              Título da obra
-            </label>
-            <input
-              type="text"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ex: Box de vidro no banheiro da suíte"
+              Olá,
+            </p>
+            <h1
               style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "12px",
-                border: "1px solid #CBD5E1",
-                fontSize: "0.9rem",
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                marginBottom: "4px",
-                color: "#0F172A",
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                color: "#111827",
               }}
             >
-              Descrição (opcional)
-            </label>
-            <textarea
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Detalhes importantes, materiais usados, medidas, etc."
-              rows={3}
+              {nomeMostrado}
+            </h1>
+            <p
               style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "12px",
-                border: "1px solid #CBD5E1",
-                fontSize: "0.9rem",
-                resize: "vertical",
-              }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "12px" }}>
-            <label
-              style={{
-                display: "block",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                marginBottom: "4px",
-                color: "#0F172A",
+                fontSize: "0.78rem",
+                color: "#6B7280",
+                marginTop: 2,
               }}
             >
-              Foto da obra
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setArquivo(file);
-              }}
-              style={{
-                fontSize: "0.85rem",
-              }}
-            />
+              Bem-vindo ao seu painel de profissional no ConstruThéo.
+            </p>
             <p
               style={{
                 fontSize: "0.75rem",
-                color: "#6B7280",
-                marginTop: "4px",
+                color: "#9CA3AF",
+                marginTop: 2,
               }}
             >
-              Envie uma foto nítida da obra (jpg, png, heic...).
+              {funcaoMostrada} • {local}
+            </p>
+          </div>
+
+          <span
+            style={{
+              padding: "6px 10px",
+              borderRadius: 999,
+              background: isDemo ? "#EFF6FF" : "#DCFCE7",
+              fontSize: "0.7rem",
+              color: isDemo ? "#2563EB" : "#15803D",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {isDemo ? "Conta demo" : "Profissional conectado"}
+          </span>
+        </header>
+
+        {/* RESUMO MÉTRICAS (demo + real de obras em andamento) */}
+        <section
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 16,
+            padding: "10px 12px",
+            borderRadius: 16,
+            background: "#F9FAFB",
+            border: "1px solid #E5E7EB",
+            fontSize: "0.78rem",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontWeight: 600,
+                color: "#111827",
+                marginBottom: 4,
+              }}
+            >
+              Avaliação média
+            </p>
+            <p
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                color: "#6B7280",
+              }}
+            >
+              <span>⭐</span>
+              <span>
+                <strong>4,8</strong> (5 avaliações)
+              </span>
             </p>
           </div>
 
           <div
             style={{
-              marginTop: "16px",
-              marginBottom: "10px",
-              padding: "10px 12px",
-              borderRadius: "14px",
-              background: "#F9FAFB",
-              border: "1px solid #E5E7EB",
+              width: 1,
+              background: "#E5E7EB",
             }}
-          >
-            <label
+          />
+
+          <div>
+            <p
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                fontSize: "0.85rem",
-                color: "#0F172A",
                 fontWeight: 600,
-                marginBottom: "6px",
+                color: "#111827",
+                marginBottom: 4,
               }}
             >
-              <input
-                type="checkbox"
-                checked={salvarComoObraAndamento}
-                onChange={(e) =>
-                  setSalvarComoObraAndamento(e.target.checked)
-                }
-              />
-              Marcar também como obra em andamento
-            </label>
+              Obras em andamento
+            </p>
+            <p style={{ color: "#6B7280" }}>
+              <strong>{obrasAndamento.length}</strong> ativa(s)
+            </p>
+          </div>
+        </section>
 
-            {salvarComoObraAndamento && (
-              <div
+        {/* SUAS OBRAS (GALERIA) */}
+        <section
+          style={{
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <p
+              style={{
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                color: "#111827",
+              }}
+            >
+              Suas obras concluídas / galeria
+            </p>
+
+            {!isDemo && (
+              <span
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  marginTop: "4px",
+                  fontSize: "0.72rem",
+                  color: "#64748B",
                 }}
               >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "0.8rem",
-                      marginBottom: "2px",
-                      color: "#4B5563",
-                    }}
-                  >
-                    Nome do cliente (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    value={clienteNome}
-                    onChange={(e) => setClienteNome(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: "10px",
-                      border: "1px solid #CBD5E1",
-                      fontSize: "0.85rem",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "0.8rem",
-                      marginBottom: "2px",
-                      color: "#4B5563",
-                    }}
-                  >
-                    Dias restantes (opcional)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={diasRestantes}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setDiasRestantes(v === "" ? "" : Number(v));
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: "10px",
-                      border: "1px solid #CBD5E1",
-                      fontSize: "0.85rem",
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "0.8rem",
-                      marginBottom: "2px",
-                      color: "#4B5563",
-                    }}
-                  >
-                    Previsão de término (opcional)
-                  </label>
-                  <input
-                    type="date"
-                    value={previsaoFim}
-                    onChange={(e) => setPrevisaoFim(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 10px",
-                      borderRadius: "10px",
-                      border: "1px solid #CBD5E1",
-                      fontSize: "0.85rem",
-                    }}
-                  />
-                </div>
-              </div>
+                {carregandoObrasGaleria
+                  ? "Carregando..."
+                  : `${obrasGaleria.length} obra(s)`}
+              </span>
             )}
           </div>
 
-          <button
-            type="submit"
-            disabled={carregando}
+          {/* Botão para cadastrar nova obra */}
+          {!isDemo && profissional?.id && (
+            <div
+              style={{
+                marginBottom: 8,
+              }}
+            >
+              <Link
+                href={`/painel/profissional/nova-obra?id=${profissional.id}&apelido=${encodeURIComponent(
+                  nomeMostrado
+                )}`}
+                style={{
+                  display: "inline-block",
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(to right, #0284C7, #0EA5E9)",
+                  color: "#FFFFFF",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                + Cadastrar nova obra
+              </Link>
+            </div>
+          )}
+
+          <div
             style={{
-              width: "100%",
-              marginTop: "8px",
-              padding: "12px",
-              borderRadius: "999px",
-              border: "none",
-              background: carregando ? "#93C5FD" : "#2563EB",
-              color: "white",
-              fontWeight: 600,
-              fontSize: "0.98rem",
-              cursor: carregando ? "default" : "pointer",
-              boxShadow: "0 2px 8px rgba(37,99,235,0.35)",
+              display: "flex",
+              gap: 10,
+              overflowX: "auto",
+              paddingBottom: 4,
             }}
           >
-            {carregando ? "Salvando..." : "Salvar obra"}
-          </button>
-        </form>
+            {carregandoObrasGaleria ? (
+              <div
+                style={{
+                  minWidth: 190,
+                  borderRadius: 18,
+                  border: "1px solid #E5E7EB",
+                  background: "#F9FAFB",
+                  padding: 12,
+                  fontSize: "0.8rem",
+                  color: "#6B7280",
+                }}
+              >
+                Carregando obras...
+              </div>
+            ) : obrasGaleria.length === 0 ? (
+              <div
+                style={{
+                  minWidth: 220,
+                  borderRadius: 18,
+                  border: "1px dashed #CBD5E1",
+                  background: "#F8FAFC",
+                  padding: 12,
+                  fontSize: "0.8rem",
+                  color: "#64748B",
+                }}
+              >
+                Nenhuma obra cadastrada ainda. Use o botão{" "}
+                <strong>&quot;Cadastrar nova obra&quot;</strong> para adicionar
+                a primeira foto do seu trabalho.
+              </div>
+            ) : (
+              obrasGaleria.map((obra) => (
+                <div
+                  key={obra.id}
+                  style={{
+                    minWidth: 190,
+                    borderRadius: 18,
+                    border: "1px solid #E5E7EB",
+                    background: "#FFFFFF",
+                    padding: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      height: 100,
+                      borderRadius: 12,
+                      background: "#E5F0FF",
+                      marginBottom: 8,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.75rem",
+                      color: "#64748B",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {obra.imagem_url ? (
+                      <img
+                        src={obra.imagem_url}
+                        alt={obra.titulo}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      "Sem foto"
+                    )}
+                  </div>
+
+                  <p
+                    style={{
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                      color: "#111827",
+                      marginBottom: 2,
+                    }}
+                  >
+                    {obra.titulo}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "#6B7280",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Obra concluída
+                  </p>
+
+                  <button
+                    style={{
+                      borderRadius: 999,
+                      padding: "6px 10px",
+                      border: "1px solid #2563EB",
+                      background: "white",
+                      fontSize: "0.75rem",
+                      color: "#2563EB",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Ver detalhes
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          <p
+            style={{
+              textAlign: "center",
+              fontSize: "0.7rem",
+              color: "#9CA3AF",
+              marginTop: 4,
+            }}
+          >
+            Arraste para o lado para ver todas as obras
+          </p>
+
+          {erroObras && (
+            <p
+              style={{
+                marginTop: 6,
+                fontSize: "0.75rem",
+                color: "#B91C1C",
+              }}
+            >
+              {erroObras}
+            </p>
+          )}
+        </section>
+
+        {/* OBRAS EM ANDAMENTO */}
+        <section
+          style={{
+            marginBottom: 16,
+            padding: "10px 12px",
+            borderRadius: 18,
+            border: "1px solid #E5E7EB",
+            background: "#F9FAFB",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: "#111827",
+              marginBottom: 8,
+            }}
+          >
+            Obras em andamento
+          </p>
+
+          {carregandoAndamento ? (
+            <p
+              style={{
+                fontSize: "0.78rem",
+                color: "#6B7280",
+              }}
+            >
+              Carregando informações das obras em andamento...
+            </p>
+          ) : obrasAndamento.length === 0 ? (
+            <p
+              style={{
+                fontSize: "0.78rem",
+                color: "#64748B",
+              }}
+            >
+              Você ainda não cadastrou nenhuma obra em andamento. Marque essa
+              opção ao cadastrar uma nova obra.
+            </p>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {obrasAndamento.map((obra) => (
+                <div
+                  key={obra.id}
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    padding: 8,
+                    borderRadius: 12,
+                    background: "#FFFFFF",
+                    border: "1px solid #E5E7EB",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 10,
+                      background: "#E5F0FF",
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {obra.imagem_url ? (
+                      <img
+                        src={obra.imagem_url}
+                        alt={obra.titulo}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.7rem",
+                          color: "#64748B",
+                        }}
+                      >
+                        Sem foto
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        color: "#111827",
+                      }}
+                    >
+                      {obra.titulo}
+                    </p>
+                    {obra.cliente_nome && (
+                      <p
+                        style={{
+                          fontSize: "0.72rem",
+                          color: "#6B7280",
+                        }}
+                      >
+                        Cliente: {obra.cliente_nome}
+                      </p>
+                    )}
+                    <p
+                      style={{
+                        fontSize: "0.7rem",
+                        color: "#6B7280",
+                        marginTop: 2,
+                      }}
+                    >
+                      {obra.dias_restantes != null
+                        ? `${obra.dias_restantes} dia(s) restantes`
+                        : "Prazo em aberto"}
+                      {obra.previsao_fim &&
+                        ` • Previsão: ${new Date(
+                          obra.previsao_fim
+                        ).toLocaleDateString("pt-BR")}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* RODAPÉ / SAIR */}
+        <div
+          style={{
+            marginTop: 14,
+            textAlign: "center",
+          }}
+        >
+          <Link
+            href="/"
+            style={{
+              fontSize: "0.75rem",
+              color: "#2563EB",
+              textDecoration: "none",
+            }}
+          >
+            ← Voltar para a tela inicial
+          </Link>
+        </div>
       </div>
     </main>
   );
