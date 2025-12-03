@@ -10,8 +10,9 @@ export default function NovaObraPage() {
 
   const [profissionalId, setProfissionalId] = useState<string | null>(null);
   const [apelido, setApelido] = useState("profissional");
+  const [carregandoProfissional, setCarregandoProfissional] = useState(true);
 
-  // lê ?id= e ?apelido= da URL só no browser
+  // Lê ?id= e ?apelido= da URL e, se não tiver, tenta buscar do localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -21,6 +22,23 @@ export default function NovaObraPage() {
 
     if (id) setProfissionalId(id);
     if (apelidoParam) setApelido(apelidoParam);
+
+    if (!id || !apelidoParam) {
+      const local = localStorage.getItem("construtheo_profissional_atual");
+      if (local) {
+        try {
+          const p = JSON.parse(local);
+          if (!id && p.id) setProfissionalId(p.id);
+          if (!apelidoParam && (p.apelido || p.nome)) {
+            setApelido(p.apelido || p.nome);
+          }
+        } catch {
+          // ignore erro de parse
+        }
+      }
+    }
+
+    setCarregandoProfissional(false);
   }, []);
 
   const [titulo, setTitulo] = useState("");
@@ -112,18 +130,39 @@ export default function NovaObraPage() {
       setImagemUrl("");
       setArquivo(null);
 
-      // Redireciona imediatamente para o painel do profissional
-      router.push(
-        `/painel/profissional?apelido=${encodeURIComponent(
-          apelido
-        )}&id=${profissionalId}`
-      );
+      // Redireciona para o painel do profissional (depois de um tempinho opcional)
+      setTimeout(() => {
+        router.push(
+          `/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
+            apelido
+          )}`
+        );
+      }, 600);
     } catch (err: any) {
       console.error(err);
       setErro(err.message || "Erro ao cadastrar a obra.");
     } finally {
       setLoading(false);
     }
+  }
+
+  // Enquanto tá carregando dados do profissional, mostra só o container vazio
+  if (carregandoProfissional) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "16px 16px 32px",
+          boxSizing: "border-box",
+          background: "#F9FAFB",
+        }}
+      >
+        <p style={{ fontSize: "14px", color: "#64748B" }}>Carregando...</p>
+      </main>
+    );
   }
 
   // Se não achou o profissional, mostra mensagem simples
@@ -149,12 +188,16 @@ export default function NovaObraPage() {
             boxShadow: "0 4px 14px rgba(15,23,42,0.08)",
           }}
         >
-          <p style={{ marginBottom: "12px" }}>
+          <p style={{ marginBottom: "12px", fontSize: "16px" }}>
             Não foi possível identificar o profissional.
           </p>
           <Link
             href="/login"
-            style={{ color: "#2563EB", textDecoration: "underline" }}
+            style={{
+              color: "#2563EB",
+              textDecoration: "underline",
+              fontSize: "16px",
+            }}
           >
             Voltar para o login
           </Link>
@@ -191,9 +234,9 @@ export default function NovaObraPage() {
           type="button"
           onClick={() =>
             router.push(
-              `/painel/profissional?apelido=${encodeURIComponent(
+              `/painel/profissional?id=${profissionalId}&apelido=${encodeURIComponent(
                 apelido
-              )}&id=${profissionalId}`
+              )}`
             )
           }
           style={{
@@ -204,7 +247,7 @@ export default function NovaObraPage() {
             borderRadius: "999px",
             border: "1px solid #E5E7EB",
             background: "#F9FAFB",
-            fontSize: "0.78rem",
+            fontSize: "14px", // ≈ 0.875rem
             fontWeight: 500,
             color: "#2563EB",
             marginBottom: "14px",
@@ -217,7 +260,7 @@ export default function NovaObraPage() {
         <header style={{ marginBottom: "18px" }}>
           <p
             style={{
-              fontSize: "0.8rem",
+              fontSize: "14px",
               color: "#64748B",
               marginBottom: "4px",
             }}
@@ -226,7 +269,7 @@ export default function NovaObraPage() {
           </p>
           <h1
             style={{
-              fontSize: "1.4rem",
+              fontSize: "22px",
               fontWeight: 700,
               color: "#0F172A",
               marginBottom: "4px",
@@ -234,7 +277,7 @@ export default function NovaObraPage() {
           >
             Adicionar nova obra
           </h1>
-          <p style={{ color: "#6B7280", fontSize: "0.85rem" }}>
+          <p style={{ color: "#6B7280", fontSize: "14px" }}>
             Envie uma foto e os detalhes para registrar essa obra na sua
             galeria.
           </p>
@@ -246,7 +289,7 @@ export default function NovaObraPage() {
             <label
               style={{
                 display: "block",
-                fontSize: "0.85rem",
+                fontSize: "14px",
                 fontWeight: 600,
                 color: "#0F172A",
                 marginBottom: "4px",
@@ -264,7 +307,7 @@ export default function NovaObraPage() {
                 padding: "10px 12px",
                 borderRadius: "12px",
                 border: "1px solid #CBD5E1",
-                fontSize: "0.9rem",
+                fontSize: "16px",
               }}
             />
           </div>
@@ -274,7 +317,7 @@ export default function NovaObraPage() {
             <label
               style={{
                 display: "block",
-                fontSize: "0.85rem",
+                fontSize: "14px",
                 fontWeight: 600,
                 color: "#0F172A",
                 marginBottom: "4px",
@@ -291,12 +334,12 @@ export default function NovaObraPage() {
               style={{
                 display: "block",
                 marginBottom: "6px",
-                fontSize: "0.8rem",
+                fontSize: "16px",
               }}
             />
             <p
               style={{
-                fontSize: "0.75rem",
+                fontSize: "12px",
                 color: "#6B7280",
                 marginBottom: "6px",
               }}
@@ -305,7 +348,7 @@ export default function NovaObraPage() {
             </p>
             <p
               style={{
-                fontSize: "0.75rem",
+                fontSize: "12px",
                 color: "#6B7280",
                 marginBottom: "4px",
               }}
@@ -322,7 +365,7 @@ export default function NovaObraPage() {
                 padding: "8px 10px",
                 borderRadius: "10px",
                 border: "1px solid #E5E7EB",
-                fontSize: "0.85rem",
+                fontSize: "16px",
               }}
             />
           </div>
@@ -331,7 +374,7 @@ export default function NovaObraPage() {
           {erro && (
             <p
               style={{
-                fontSize: "0.8rem",
+                fontSize: "14px",
                 color: "#B91C1C",
                 background: "#FEE2E2",
                 borderRadius: "10px",
@@ -346,7 +389,7 @@ export default function NovaObraPage() {
           {sucesso && (
             <p
               style={{
-                fontSize: "0.8rem",
+                fontSize: "14px",
                 color: "#15803D",
                 background: "#DCFCE7",
                 borderRadius: "10px",
@@ -372,7 +415,7 @@ export default function NovaObraPage() {
                 : "linear-gradient(to right, #0284C7, #0EA5E9)",
               color: "white",
               fontWeight: 600,
-              fontSize: "0.95rem",
+              fontSize: "16px",
               cursor: loading ? "default" : "pointer",
               marginTop: "4px",
             }}
