@@ -58,28 +58,31 @@ export default function NovaObraPage() {
       return;
     }
 
+    if (!arquivo) {
+      setErro("Selecione uma foto da obra.");
+      return;
+    }
+
     try {
       setCarregando(true);
 
-      // 1) upload da imagem se tiver
+      // 1) upload da imagem
       let imagemUrl: string | null = null;
 
-      if (arquivo) {
-        const ext = arquivo.name.split(".").pop();
-        const filePath = `obras-profissionais/${profissionalId}-${Date.now()}.${ext}`;
+      const ext = arquivo.name.split(".").pop();
+      const filePath = `obras-profissionais/${profissionalId}-${Date.now()}.${ext}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("obras")
-          .upload(filePath, arquivo);
+      const { error: uploadError } = await supabase.storage
+        .from("obras")
+        .upload(filePath, arquivo);
 
-        if (uploadError) throw uploadError;
+      if (uploadError) throw uploadError;
 
-        const { data: publicData } = supabase.storage
-          .from("obras")
-          .getPublicUrl(filePath);
+      const { data: publicData } = supabase.storage
+        .from("obras")
+        .getPublicUrl(filePath);
 
-        imagemUrl = publicData.publicUrl;
-      }
+      imagemUrl = publicData.publicUrl;
 
       // 2) salvar na tabela de obras (galeria)
       const { error: insertObraError } = await supabase
@@ -111,8 +114,6 @@ export default function NovaObraPage() {
       }
 
       setSucesso("Obra cadastrada com sucesso!");
-
-      // manda direto pro painel do profissional
       irParaPainel();
     } catch (err: any) {
       console.error(err);
@@ -125,20 +126,68 @@ export default function NovaObraPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-10 pt-8">
+    <main
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        paddingTop: "40px",
+        paddingBottom: "40px",
+        background: "#F1F5F9", // mesmo clima do painel
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "440px",
+          background: "#FFFFFF",
+          borderRadius: "28px",
+          padding: "26px 22px 28px",
+          boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {/* Cabeçalho */}
-        <header className="mb-6">
+        <header
+          style={{
+            marginBottom: "18px",
+          }}
+        >
           <button
             type="button"
             onClick={irParaPainel}
-            className="mb-3 text-sm font-medium text-sky-600"
+            style={{
+              marginBottom: "8px",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              color: "#2563EB",
+              background: "transparent",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+            }}
           >
             ← Voltar para o painel
           </button>
 
-          <h1 className="text-2xl font-bold text-slate-900">Nova obra</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1
+            style={{
+              fontSize: "1.35rem",
+              fontWeight: 700,
+              color: "#111827",
+              marginBottom: "4px",
+            }}
+          >
+            Nova obra
+          </h1>
+          <p
+            style={{
+              fontSize: "0.85rem",
+              color: "#6B7280",
+            }}
+          >
             Envie uma foto e os detalhes para registrar essa obra na sua
             galeria.
           </p>
@@ -146,128 +195,281 @@ export default function NovaObraPage() {
 
         {/* Alertas */}
         {sucesso && (
-          <div className="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <div
+            style={{
+              marginBottom: "12px",
+              borderRadius: "12px",
+              background: "#ECFDF5",
+              padding: "8px 10px",
+              fontSize: "0.8rem",
+              color: "#047857",
+            }}
+          >
             {sucesso}
           </div>
         )}
 
         {erro && (
-          <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div
+            style={{
+              marginBottom: "12px",
+              borderRadius: "12px",
+              background: "#FEE2E2",
+              padding: "8px 10px",
+              fontSize: "0.8rem",
+              color: "#B91C1C",
+            }}
+          >
             {erro}
           </div>
         )}
 
         {/* Formulário */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-slate-700">
+        <form onSubmit={handleSubmit}>
+          {/* Título */}
+          <div style={{ marginBottom: "12px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                color: "#111827",
+                marginBottom: "4px",
+              }}
+            >
               Título da obra
             </label>
             <input
               type="text"
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[16px] text-slate-900 outline-none ring-sky-500 placeholder:text-slate-400 focus:ring-2"
-              placeholder="Ex: Box de vidro no banheiro da suíte"
+              placeholder="Ex: Alvenaria, lage, pintura, acabamentos.."
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               required
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "12px",
+                border: "1px solid #E5E7EB",
+                fontSize: "16px",
+                color: "#111827",
+                outline: "none",
+              }}
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-slate-700">
-              Descrição (opcional)
+          {/* Descrição */}
+          <div style={{ marginBottom: "12px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                color: "#111827",
+                marginBottom: "4px",
+              }}
+            >
+              Descrição <span style={{ fontWeight: 400 }}>(opcional)</span>
             </label>
             <textarea
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[16px] text-slate-900 outline-none ring-sky-500 placeholder:text-slate-400 focus:ring-2"
-              rows={3}
               placeholder="Detalhes importantes, materiais usados, medidas, etc."
+              rows={3}
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "12px",
+                border: "1px solid #E5E7EB",
+                fontSize: "16px",
+                color: "#111827",
+                outline: "none",
+                resize: "vertical",
+              }}
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-slate-700">
+          {/* Foto da obra */}
+          <div style={{ marginBottom: "16px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                color: "#111827",
+                marginBottom: "4px",
+              }}
+            >
               Foto da obra
             </label>
             <input
               type="file"
               accept="image/*"
-              className="mt-1 w-full text-[16px]"
               onChange={(e) => {
                 const file = e.target.files?.[0] || null;
                 setArquivo(file);
               }}
+              style={{
+                fontSize: "16px",
+              }}
             />
-            <p className="mt-1 text-xs text-slate-500">
+            <p
+              style={{
+                marginTop: "4px",
+                fontSize: "0.78rem",
+                color: "#6B7280",
+              }}
+            >
               Envie uma foto nítida da obra (jpg, png, heic...).
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white p-4 shadow-sm">
-            <label className="flex items-start gap-2">
+          {/* Card obra em andamento */}
+          <div
+            style={{
+              marginBottom: "18px",
+              padding: "12px 12px",
+              borderRadius: "18px",
+              border: "1px solid #E5E7EB",
+              background: "#F9FAFB",
+            }}
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                color: "#111827",
+                marginBottom: "10px",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={salvarComoObraAndamento}
                 onChange={(e) =>
                   setSalvarComoObraAndamento(e.target.checked)
                 }
-                className="mt-1 h-4 w-4"
+                style={{ width: 18, height: 18 }}
               />
-              <span className="text-sm font-medium text-slate-800">
-                Marcar também como obra em andamento
-              </span>
+              Marcar também como obra em andamento
             </label>
 
             {salvarComoObraAndamento && (
-              <div className="mt-4 space-y-3">
-                <div>
-                  <label className="text-xs font-medium text-slate-600">
-                    Nome do cliente (opcional)
+              <div style={{ marginTop: "6px" }}>
+                {/* Nome do cliente */}
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      fontWeight: 500,
+                      color: "#374151",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Nome do cliente{" "}
+                    <span style={{ fontWeight: 400 }}>(opcional)</span>
                   </label>
                   <input
                     type="text"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[16px] text-slate-900 outline-none ring-sky-500 placeholder:text-slate-400 focus:ring-2"
                     value={clienteNome}
                     onChange={(e) => setClienteNome(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #E5E7EB",
+                      fontSize: "16px",
+                      color: "#111827",
+                      outline: "none",
+                    }}
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs font-medium text-slate-600">
-                    Dias restantes (opcional)
+                {/* Dias restantes */}
+                <div style={{ marginBottom: "10px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      fontWeight: 500,
+                      color: "#374151",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Dias restantes{" "}
+                    <span style={{ fontWeight: 400 }}>(opcional)</span>
                   </label>
                   <input
                     type="number"
                     min={0}
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[16px] text-slate-900 outline-none ring-sky-500 placeholder:text-slate-400 focus:ring-2"
                     value={diasRestantes}
                     onChange={(e) => {
                       const value = e.target.value;
                       setDiasRestantes(value === "" ? "" : Number(value));
                     }}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #E5E7EB",
+                      fontSize: "16px",
+                      color: "#111827",
+                      outline: "none",
+                    }}
                   />
                 </div>
 
+                {/* Previsão fim */}
                 <div>
-                  <label className="text-xs font-medium text-slate-600">
-                    Previsão de término (opcional)
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      fontWeight: 500,
+                      color: "#374151",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Previsão de término{" "}
+                    <span style={{ fontWeight: 400 }}>(opcional)</span>
                   </label>
                   <input
                     type="date"
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[16px] text-slate-900 outline-none ring-sky-500 placeholder:text-slate-400 focus:ring-2"
                     value={previsaoFim}
                     onChange={(e) => setPrevisaoFim(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid #E5E7EB",
+                      fontSize: "16px",
+                      color: "#111827",
+                      outline: "none",
+                    }}
                   />
                 </div>
               </div>
             )}
           </div>
 
+          {/* Botão salvar */}
           <button
             type="submit"
             disabled={carregando}
-            className="mt-2 w-full rounded-lg bg-sky-600 py-3 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
+            style={{
+              width: "100%",
+              padding: "12px 16px",
+              borderRadius: "999px",
+              border: "none",
+              background: "linear-gradient(135deg, #0284C7, #0EA5E9)",
+              color: "#FFFFFF",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              cursor: carregando ? "default" : "pointer",
+              opacity: carregando ? 0.7 : 1,
+            }}
           >
             {carregando ? "Salvando..." : "Salvar obra"}
           </button>
