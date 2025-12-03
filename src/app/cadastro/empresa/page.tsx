@@ -452,11 +452,11 @@ export default function CadastroEmpresaPage() {
             />
           </div>
 
-          {/* Contatos */}
+          {/* Contatos – AGORA EMPILHADOS */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: "flex",
+              flexDirection: "column",
               gap: "10px",
             }}
           >
@@ -552,11 +552,11 @@ export default function CadastroEmpresaPage() {
             />
           </div>
 
-          {/* Senha */}
+          {/* Senha – AGORA EMPILHADA */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: "flex",
+              flexDirection: "column",
               gap: "10px",
             }}
           >
@@ -622,11 +622,11 @@ export default function CadastroEmpresaPage() {
             </div>
           </div>
 
-          {/* Localização */}
+          {/* Localização – AGORA EMPILHADA */}
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: "flex",
+              flexDirection: "column",
               gap: "10px",
             }}
           >
