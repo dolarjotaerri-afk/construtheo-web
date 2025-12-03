@@ -23,7 +23,6 @@ export default function NovaObraPage() {
     if (apelidoParam) setApelido(apelidoParam);
   }, []);
 
-
   const [titulo, setTitulo] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [arquivo, setArquivo] = useState<File | null>(null);
@@ -52,6 +51,12 @@ export default function NovaObraPage() {
       return;
     }
 
+    // validação do arquivo: só aceita imagem
+    if (arquivo && !arquivo.type.startsWith("image/")) {
+      setErro("Envie apenas arquivos de imagem (foto).");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -59,14 +64,18 @@ export default function NovaObraPage() {
 
       // Se tiver arquivo, faz upload no Storage
       if (arquivo) {
-        const bucket = "galeria-profissional"; // crie este bucket no Supabase Storage
+        const bucket = "galeria-profissional"; // bucket no Supabase Storage
 
         const fileExt = arquivo.name.split(".").pop();
         const filePath = `profissionais/${profissionalId}/${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(filePath, arquivo);
+          .upload(filePath, arquivo, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: arquivo.type || "image/jpeg",
+          });
 
         if (uploadError) {
           console.error(uploadError);
@@ -97,39 +106,43 @@ export default function NovaObraPage() {
       }
 
       setSucesso("Obra cadastrada com sucesso!");
+
+      // limpa campos
       setTitulo("");
       setImagemUrl("");
       setArquivo(null);
 
-      // Volta para o painel depois de 1 segundo
-      setTimeout(() => {
-        router.push(
-          `/painel/profissional?apelido=${encodeURIComponent(
-            apelido
-          )}&id=${profissionalId}`
-        );
-      }, 1000);
+      // Redireciona imediatamente para o painel do profissional
+      router.push(
+        `/painel/profissional?apelido=${encodeURIComponent(
+          apelido
+        )}&id=${profissionalId}`
+      );
     } catch (err: any) {
+      console.error(err);
       setErro(err.message || "Erro ao cadastrar a obra.");
     } finally {
       setLoading(false);
     }
   }
 
+  // Se não achou o profissional, mostra mensagem simples
   if (!profissionalId) {
     return (
       <main
         style={{
-          width: "100%",
+          minHeight: "100vh",
           display: "flex",
           justifyContent: "center",
-          paddingTop: "40px",
+          padding: "16px 16px 32px",
+          boxSizing: "border-box",
+          background: "#F9FAFB",
         }}
       >
         <div
           style={{
             width: "100%",
-            maxWidth: "440px",
+            maxWidth: 440,
             background: "#FFFFFF",
             borderRadius: "28px",
             padding: "26px 22px",
@@ -140,10 +153,10 @@ export default function NovaObraPage() {
             Não foi possível identificar o profissional.
           </p>
           <Link
-            href="/painel/profissional"
+            href="/login"
             style={{ color: "#2563EB", textDecoration: "underline" }}
           >
-            Voltar para o painel
+            Voltar para o login
           </Link>
         </div>
       </main>
@@ -153,23 +166,54 @@ export default function NovaObraPage() {
   return (
     <main
       style={{
-        width: "100%",
+        minHeight: "100vh",
         display: "flex",
         justifyContent: "center",
-        paddingTop: "24px",
-        paddingBottom: "40px",
+        padding: "16px 16px 32px",
+        boxSizing: "border-box",
+        background: "#F9FAFB",
+        overflowX: "hidden",
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "440px",
+          maxWidth: 440,
+          margin: "0 auto",
           background: "#FFFFFF",
           borderRadius: "28px",
-          padding: "26px 22px",
+          padding: "24px 22px 20px",
           boxShadow: "0 4px 14px rgba(15,23,42,0.08)",
         }}
       >
+        {/* VOLTAR PARA O PAINEL - TOPO */}
+        <button
+          type="button"
+          onClick={() =>
+            router.push(
+              `/painel/profissional?apelido=${encodeURIComponent(
+                apelido
+              )}&id=${profissionalId}`
+            )
+          }
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+            padding: "4px 10px",
+            borderRadius: "999px",
+            border: "1px solid #E5E7EB",
+            background: "#F9FAFB",
+            fontSize: "0.78rem",
+            fontWeight: 500,
+            color: "#2563EB",
+            marginBottom: "14px",
+            cursor: "pointer",
+          }}
+        >
+          ← Voltar para o painel
+        </button>
+
         <header style={{ marginBottom: "18px" }}>
           <p
             style={{
@@ -191,12 +235,13 @@ export default function NovaObraPage() {
             Adicionar nova obra
           </h1>
           <p style={{ color: "#6B7280", fontSize: "0.85rem" }}>
-            Cadastre fotos dos seus serviços para aparecerem no seu painel e
-            ajudarem os clientes a confiarem no seu trabalho.
+            Envie uma foto e os detalhes para registrar essa obra na sua
+            galeria.
           </p>
         </header>
 
         <form onSubmit={handleSubmit}>
+          {/* TÍTULO / DESCRIÇÃO CURTA */}
           <div style={{ marginBottom: "14px" }}>
             <label
               style={{
@@ -213,7 +258,7 @@ export default function NovaObraPage() {
               type="text"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ex: Box de vidro do banheiro"
+              placeholder="Ex: Muro e laje da garagem"
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -224,6 +269,7 @@ export default function NovaObraPage() {
             />
           </div>
 
+          {/* FOTO */}
           <div style={{ marginBottom: "14px" }}>
             <label
               style={{
@@ -255,8 +301,16 @@ export default function NovaObraPage() {
                 marginBottom: "6px",
               }}
             >
-              Você também pode colar uma URL de imagem, se já tiver a foto
-              hospedada em algum lugar.
+              Envie uma foto nítida da obra (jpg, jpeg, png, heic...).
+            </p>
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "#6B7280",
+                marginBottom: "4px",
+              }}
+            >
+              Se preferir, cole abaixo o endereço (link) da imagem:
             </p>
             <input
               type="text"
@@ -273,11 +327,15 @@ export default function NovaObraPage() {
             />
           </div>
 
+          {/* ERROS / SUCESSO */}
           {erro && (
             <p
               style={{
                 fontSize: "0.8rem",
                 color: "#B91C1C",
+                background: "#FEE2E2",
+                borderRadius: "10px",
+                padding: "6px 8px",
                 marginBottom: "8px",
               }}
             >
@@ -290,6 +348,9 @@ export default function NovaObraPage() {
               style={{
                 fontSize: "0.8rem",
                 color: "#15803D",
+                background: "#DCFCE7",
+                borderRadius: "10px",
+                padding: "6px 8px",
                 marginBottom: "8px",
               }}
             >
@@ -297,6 +358,7 @@ export default function NovaObraPage() {
             </p>
           )}
 
+          {/* BOTÃO SALVAR */}
           <button
             type="submit"
             disabled={loading}
@@ -305,31 +367,19 @@ export default function NovaObraPage() {
               padding: "12px",
               borderRadius: "999px",
               border: "none",
-              background: loading ? "#38BDF8" : "#0EA5E9",
+              background: loading
+                ? "linear-gradient(to right, #94A3B8, #CBD5F5)"
+                : "linear-gradient(to right, #0284C7, #0EA5E9)",
               color: "white",
               fontWeight: 600,
               fontSize: "0.95rem",
               cursor: loading ? "default" : "pointer",
-              marginBottom: "10px",
+              marginTop: "4px",
             }}
           >
             {loading ? "Salvando..." : "Salvar obra"}
           </button>
         </form>
-
-        <Link
-          href={`/painel/profissional?apelido=${encodeURIComponent(
-            apelido
-          )}&id=${profissionalId}`}
-          style={{
-            display: "inline-block",
-            marginTop: "4px",
-            fontSize: "0.8rem",
-            color: "#2563EB",
-          }}
-        >
-          ← Voltar para o painel
-        </Link>
       </div>
     </main>
   );
