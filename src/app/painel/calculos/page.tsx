@@ -221,7 +221,7 @@ export default function PainelCalculosPage() {
                     style={{
                       padding: "14px",
                       borderRadius: "16px",
-                      border: "1px solid "#E5E7EB",
+                      border: "1px solid #E5E7EB", // <-- corrigido aqui
                       background: "#F8FAFC",
                       textDecoration: "none",
                       fontSize: "0.9rem",
