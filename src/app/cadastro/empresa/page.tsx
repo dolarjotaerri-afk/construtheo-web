@@ -29,7 +29,10 @@ export default function CadastroEmpresaPage() {
         ((formData.get("nome_fantasia") as string) || "").trim();
       const responsavel =
         ((formData.get("responsavel") as string) || "").trim();
-      const cnpj = ((formData.get("cnpj") as string) || "").trim();
+
+      const cnpjRaw = ((formData.get("cnpj") as string) || "").trim();
+      const cnpj = cnpjRaw.replace(/\D/g, ""); // 🔹 normaliza CNPJ (só números)
+
       const tipoEmpresa = ((formData.get("tipo") as string) || "").trim();
       const detalheTipo =
         ((formData.get("detalhe_tipo") as string) || "").trim();
@@ -56,7 +59,7 @@ export default function CadastroEmpresaPage() {
         localizacao = localizacao ? `${localizacao} (${bairro})` : bairro;
       }
 
-      // validações básicas
+      // 🔸 validações básicas
       if (!nomeFantasia || !whatsapp || !cidade) {
         setErro(
           "Preencha pelo menos Nome fantasia, WhatsApp e Cidade da empresa."
@@ -89,7 +92,53 @@ export default function CadastroEmpresaPage() {
         return;
       }
 
-      // 👉 1) Criar usuário na Auth
+      // 🔍 1) Verificar se o e-mail já existe em qualquer tabela de usuário
+      const tabelasUsuarios = ["clientes", "profissionais", "empresas"] as const;
+
+      const resultadosEmail = await Promise.all(
+        tabelasUsuarios.map((tabela) =>
+          supabase
+            .from(tabela)
+            .select("id", { count: "exact", head: true })
+            .eq("email", email)
+        )
+      );
+
+      const emailJaExiste = resultadosEmail.some(({ count, error }) => {
+        if (error) {
+          console.error(`Erro ao verificar e-mail em ${error.message}`);
+          return false;
+        }
+        return (count ?? 0) > 0;
+      });
+
+      if (emailJaExiste) {
+        setErro(
+          "Este e-mail já está cadastrado na plataforma. Faça login ou recupere sua senha."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 🔍 2) Verificar se o CNPJ já existe na tabela de empresas (se informado)
+      if (cnpj) {
+        const { count: countCnpj, error: erroCnpj } = await supabase
+          .from("empresas")
+          .select("id", { count: "exact", head: true })
+          .eq("cnpj", cnpj);
+
+        if (erroCnpj) {
+          console.error("Erro ao verificar CNPJ:", erroCnpj.message);
+        }
+
+        if ((countCnpj ?? 0) > 0) {
+          setErro("Este CNPJ já está cadastrado como empresa no ConstruThéo.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 👉 3) Criar usuário na Auth
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email,
@@ -116,14 +165,14 @@ export default function CadastroEmpresaPage() {
         return;
       }
 
-      // 👉 2) Inserir na tabela EMPRESAS
+      // 👉 4) Inserir na tabela EMPRESAS
       const { data, error } = await supabase
         .from("empresas")
         .insert([
           {
             id: user.id,
             nome: nomeFantasia,
-            cnpj,
+            cnpj: cnpj || null, // 🔹 salva CNPJ normalizado ou null
             responsavel,
             email,
             whatsapp,
@@ -145,7 +194,7 @@ export default function CadastroEmpresaPage() {
         return;
       }
 
-      // 👉 3) Guarda resumo no localStorage
+      // 👉 5) Guarda resumo no localStorage
       if (typeof window !== "undefined") {
         const resumoEmpresa = {
           id: data?.id,
@@ -169,7 +218,7 @@ export default function CadastroEmpresaPage() {
         );
       }
 
-      // 👉 4) Redireciona para o painel da empresa
+      // 👉 6) Redireciona para o painel da empresa
       router.push("/painel/empresa");
     } catch (err) {
       console.error(err);
@@ -452,7 +501,7 @@ export default function CadastroEmpresaPage() {
             />
           </div>
 
-          {/* Contatos – AGORA EMPILHADOS */}
+          {/* Contatos – EMPILHADOS */}
           <div
             style={{
               display: "flex",
@@ -552,7 +601,7 @@ export default function CadastroEmpresaPage() {
             />
           </div>
 
-          {/* Senha – AGORA EMPILHADA */}
+          {/* Senha – EMPILHADA */}
           <div
             style={{
               display: "flex",
@@ -622,7 +671,7 @@ export default function CadastroEmpresaPage() {
             </div>
           </div>
 
-          {/* Localização – AGORA EMPILHADA */}
+          {/* Localização – EMPILHADA */}
           <div
             style={{
               display: "flex",
