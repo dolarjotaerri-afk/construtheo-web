@@ -291,7 +291,7 @@ export default function CadastroEmpresaPage() {
           cidade: data?.cidade ?? cidadeFinal,
           estado: data?.estado ?? estadoFinal,
           bairro: data?.bairro ?? bairroFinal,
-          cep: data?.cep ?? cepFinal || null,
+          cep: data?.cep ?? cepFinal ?? null,
           endereco,
           instagram,
           aceitaOfertas,
