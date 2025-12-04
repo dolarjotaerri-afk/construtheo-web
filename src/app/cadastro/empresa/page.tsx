@@ -7,6 +7,35 @@ import { supabase } from "../../../lib/supabaseClient";
 
 const steps = ["Dados básicos", "Contato", "Localização"];
 
+// helper pra pegar localização atual
+async function obterCoordenadasAtual(): Promise<{
+  latitude: number;
+  longitude: number;
+} | null> {
+  if (typeof window === "undefined" || !("geolocation" in navigator)) {
+    return null;
+  }
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        console.error("Erro ao obter localização:", err);
+        resolve(null); // não trava cadastro se der erro ou negar
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+      }
+    );
+  });
+}
+
 export default function CadastroEmpresaPage() {
   const router = useRouter();
 
@@ -31,7 +60,7 @@ export default function CadastroEmpresaPage() {
         ((formData.get("responsavel") as string) || "").trim();
 
       const cnpjRaw = ((formData.get("cnpj") as string) || "").trim();
-      const cnpj = cnpjRaw.replace(/\D/g, ""); // 🔹 normaliza CNPJ (só números)
+      const cnpj = cnpjRaw.replace(/\D/g, ""); // só números
 
       const tipoEmpresa = ((formData.get("tipo") as string) || "").trim();
       const detalheTipo =
@@ -106,7 +135,7 @@ export default function CadastroEmpresaPage() {
 
       const emailJaExiste = resultadosEmail.some(({ count, error }) => {
         if (error) {
-          console.error(`Erro ao verificar e-mail em ${error.message}`);
+          console.error(`Erro ao verificar e-mail:`, error.message);
           return false;
         }
         return (count ?? 0) > 0;
@@ -138,7 +167,17 @@ export default function CadastroEmpresaPage() {
         }
       }
 
-      // 👉 3) Criar usuário na Auth
+      // 📍 3) Tentar obter geolocalização do usuário
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+
+      const coords = await obterCoordenadasAtual();
+      if (coords) {
+        latitude = coords.latitude;
+        longitude = coords.longitude;
+      }
+
+      // 👉 4) Criar usuário na Auth
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email,
@@ -165,14 +204,14 @@ export default function CadastroEmpresaPage() {
         return;
       }
 
-      // 👉 4) Inserir na tabela EMPRESAS
+      // 👉 5) Inserir na tabela EMPRESAS (já com latitude/longitude se existirem)
       const { data, error } = await supabase
         .from("empresas")
         .insert([
           {
             id: user.id,
             nome: nomeFantasia,
-            cnpj: cnpj || null, // 🔹 salva CNPJ normalizado ou null
+            cnpj: cnpj || null,
             responsavel,
             email,
             whatsapp,
@@ -180,9 +219,11 @@ export default function CadastroEmpresaPage() {
             detalhe_tipo: detalheTipo,
             localizacao,
             instagram,
+            latitude,
+            longitude,
           },
         ])
-        .select("id, nome, tipo, localizacao, whatsapp, email")
+        .select("id, nome, tipo, localizacao, whatsapp, email, latitude, longitude")
         .single();
 
       if (error) {
@@ -194,7 +235,7 @@ export default function CadastroEmpresaPage() {
         return;
       }
 
-      // 👉 5) Guarda resumo no localStorage
+      // 👉 6) Guarda resumo no localStorage
       if (typeof window !== "undefined") {
         const resumoEmpresa = {
           id: data?.id,
@@ -210,6 +251,8 @@ export default function CadastroEmpresaPage() {
           endereco,
           instagram,
           aceitaOfertas,
+          latitude: data?.latitude ?? latitude,
+          longitude: data?.longitude ?? longitude,
         };
 
         localStorage.setItem(
@@ -218,7 +261,7 @@ export default function CadastroEmpresaPage() {
         );
       }
 
-      // 👉 6) Redireciona para o painel da empresa
+      // 👉 7) Redireciona para o painel da empresa
       router.push("/painel/empresa");
     } catch (err) {
       console.error(err);
