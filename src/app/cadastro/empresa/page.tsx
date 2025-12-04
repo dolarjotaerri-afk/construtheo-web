@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
+import { buscarEnderecoPorCep } from "../../../lib/cepService";
 
 const steps = ["Dados básicos", "Contato", "Localização"];
 
@@ -16,7 +17,7 @@ async function obterCoordenadasAtual(): Promise<{
     return null;
   }
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         resolve({
@@ -44,6 +45,36 @@ export default function CadastroEmpresaPage() {
 
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+
+  // CEP / endereço
+  const [cep, setCep] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [buscandoCep, setBuscandoCep] = useState(false);
+
+  async function handleCepBlur() {
+    const cepLimpo = cep.replace(/\D/g, "");
+    if (cepLimpo.length !== 8) return;
+
+    try {
+      setBuscandoCep(true);
+      setErro(null);
+
+      const endereco = await buscarEnderecoPorCep(cepLimpo);
+
+      setCidade((prev) => prev || endereco.cidade);
+      setEstado((prev) => prev || endereco.estado);
+      setBairro((prev) => prev || endereco.bairro || "");
+    } catch (err: any) {
+      console.error(err);
+      setErro(
+        err?.message || "Não foi possível buscar o endereço pelo CEP."
+      );
+    } finally {
+      setBuscandoCep(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -74,22 +105,28 @@ export default function CadastroEmpresaPage() {
       const instagram =
         ((formData.get("instagram") as string) || "").trim();
 
-      const cidade = ((formData.get("cidade") as string) || "").trim();
-      const estado = ((formData.get("estado") as string) || "").trim();
-      const bairro = ((formData.get("bairro") as string) || "").trim();
       const endereco = ((formData.get("endereco") as string) || "").trim(); // só localStorage
 
       const aceitaOfertas =
         formData.get("aceita_ofertas_whatsapp") === "on";
 
+      const cidadeFinal = cidade.trim();
+      const estadoFinal = estado.trim();
+      const bairroFinal = bairro.trim();
+      const cepFinal = cep.replace(/\D/g, "");
+
       // monta localizacao para a coluna "localizacao"
-      let localizacao = [cidade, estado].filter(Boolean).join(" - ");
-      if (bairro) {
-        localizacao = localizacao ? `${localizacao} (${bairro})` : bairro;
+      let localizacao = [cidadeFinal, estadoFinal]
+        .filter(Boolean)
+        .join(" - ");
+      if (bairroFinal) {
+        localizacao = localizacao
+          ? `${localizacao} (${bairroFinal})`
+          : bairroFinal;
       }
 
       // 🔸 validações básicas
-      if (!nomeFantasia || !whatsapp || !cidade) {
+      if (!nomeFantasia || !whatsapp || !cidadeFinal) {
         setErro(
           "Preencha pelo menos Nome fantasia, WhatsApp e Cidade da empresa."
         );
@@ -204,7 +241,7 @@ export default function CadastroEmpresaPage() {
         return;
       }
 
-      // 👉 5) Inserir na tabela EMPRESAS (já com latitude/longitude se existirem)
+      // 👉 5) Inserir na tabela EMPRESAS (agora com cep / lat / lng)
       const { data, error } = await supabase
         .from("empresas")
         .insert([
@@ -219,11 +256,17 @@ export default function CadastroEmpresaPage() {
             detalhe_tipo: detalheTipo,
             localizacao,
             instagram,
+            cidade: cidadeFinal || null,
+            estado: estadoFinal || null,
+            bairro: bairroFinal || null,
+            cep: cepFinal || null,
             latitude,
             longitude,
           },
         ])
-        .select("id, nome, tipo, localizacao, whatsapp, email, latitude, longitude")
+        .select(
+          "id, nome, tipo, localizacao, whatsapp, email, latitude, longitude, cidade, estado, bairro, cep"
+        )
         .single();
 
       if (error) {
@@ -245,9 +288,10 @@ export default function CadastroEmpresaPage() {
           whatsapp,
           email,
           telefone,
-          cidade,
-          estado,
-          bairro,
+          cidade: data?.cidade ?? cidadeFinal,
+          estado: data?.estado ?? estadoFinal,
+          bairro: data?.bairro ?? bairroFinal,
+          cep: data?.cep ?? cepFinal || null,
           endereco,
           instagram,
           aceitaOfertas,
@@ -714,6 +758,65 @@ export default function CadastroEmpresaPage() {
             </div>
           </div>
 
+          {/* CEP */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <label
+              htmlFor="cep"
+              style={{
+                fontSize: "0.85rem",
+                fontWeight: 500,
+                marginBottom: "4px",
+                color: "#374151",
+              }}
+            >
+              CEP
+            </label>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <input
+                id="cep"
+                name="cep"
+                placeholder="00000-000"
+                value={cep}
+                onChange={(e) => {
+                  const onlyDigits = e.target.value.replace(/\D/g, "");
+                  setCep(onlyDigits);
+                }}
+                onBlur={handleCepBlur}
+                style={{
+                  flex: 1,
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  border: "1px solid #D1D5DB",
+                  background: "#FFFFFF",
+                  fontSize: "0.9rem",
+                  outline: "none",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                  transition: "all 0.2s",
+                }}
+              />
+              {buscandoCep && (
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#64748B",
+                  }}
+                >
+                  Buscando...
+                </span>
+              )}
+            </div>
+            <p
+              style={{
+                marginTop: "4px",
+                fontSize: "0.72rem",
+                color: "#6B7280",
+              }}
+            >
+              Ao informar o CEP, vamos preencher automaticamente cidade, estado
+              e bairro.
+            </p>
+          </div>
+
           {/* Localização – EMPILHADA */}
           <div
             style={{
@@ -739,6 +842,8 @@ export default function CadastroEmpresaPage() {
                 id="cidade"
                 name="cidade"
                 placeholder="Ex: Igaratá"
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
                 style={{
                   padding: "12px 14px",
                   borderRadius: "10px",
@@ -769,6 +874,8 @@ export default function CadastroEmpresaPage() {
                 id="estado"
                 name="estado"
                 placeholder="SP, RJ, MG..."
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
                 style={{
                   padding: "12px 14px",
                   borderRadius: "10px",
@@ -800,6 +907,8 @@ export default function CadastroEmpresaPage() {
               id="bairro"
               name="bairro"
               placeholder="Ex: Centro"
+              value={bairro}
+              onChange={(e) => setBairro(e.target.value)}
               style={{
                 padding: "12px 14px",
                 borderRadius: "10px",
