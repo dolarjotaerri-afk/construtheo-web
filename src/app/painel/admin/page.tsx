@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 
 type Metrica = {
@@ -151,6 +152,8 @@ const scrollCarrossel = (
 };
 
 export default function PainelAdminPage() {
+  const router = useRouter();
+
   const atividadesRef = useRef<HTMLDivElement | null>(null);
   const pendenciasRef = useRef<HTMLDivElement | null>(null);
 
@@ -158,8 +161,38 @@ export default function PainelAdminPage() {
   const [carregandoPendencias, setCarregandoPendencias] =
     useState(false);
 
-  // Carrega pendências reais do Supabase
+  const [verificandoAdmin, setVerificandoAdmin] = useState(true);
+
+  // --------- Verifica se usuário é ADMIN ---------
   useEffect(() => {
+    const verificarAdmin = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error || !data.user) {
+        // não logado → manda pro login do admin
+        router.push("/admin/login");
+        return;
+      }
+
+      const role = (data.user.app_metadata as any)?.role;
+
+      if (role !== "admin") {
+        // logado mas não é admin → faz logout e manda pro login normal
+        await supabase.auth.signOut();
+        router.push("/login");
+        return;
+      }
+
+      setVerificandoAdmin(false);
+    };
+
+    verificarAdmin();
+  }, [router]);
+
+  // --------- Carrega pendências reais do Supabase ---------
+  useEffect(() => {
+    if (verificandoAdmin) return;
+
     const carregarPendencias = async () => {
       setCarregandoPendencias(true);
       try {
@@ -223,7 +256,7 @@ export default function PainelAdminPage() {
     };
 
     carregarPendencias();
-  }, []);
+  }, [verificandoAdmin]);
 
   // Atualiza status (aprovar/bloquear)
   const atualizarStatusPendencia = async (
@@ -245,10 +278,33 @@ export default function PainelAdminPage() {
     }
 
     // remove da lista local
-    setPendencias((prev) =>
-      prev.filter((p) => p.id !== pendencia.id)
-    );
+    setPendencias((prev) => prev.filter((p) => p.id !== pendencia.id));
   };
+
+  // Enquanto verifica se é admin
+  if (verificandoAdmin) {
+    return (
+      <main
+        style={{
+          width: "100%",
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#F9FAFB",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "0.9rem",
+            color: "#6B7280",
+          }}
+        >
+          Verificando permissões do administrador...
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -384,7 +440,7 @@ export default function PainelAdminPage() {
                   padding: "8px 10px",
                   borderRadius: "999px",
                   background: "#FFFFFF",
-                  border: "1px solid #E5E7EB",
+                  border: "1px solid "#E5E7EB",
                   fontSize: "0.8rem",
                   color: "#111827",
                   textAlign: "center",
@@ -742,7 +798,7 @@ export default function PainelAdminPage() {
             })}
           </div>
 
-          {/* Carrossel de pendências (AGORA REAIS) */}
+          {/* Carrossel de pendências (reais) */}
           <div
             ref={pendenciasRef}
             className="carrossel-admin"
@@ -967,7 +1023,7 @@ export default function PainelAdminPage() {
                   padding: "10px 12px",
                   borderRadius: "999px",
                   background: "#F9FAFB",
-                  border: "1px solid #E5E7EB",
+                  border: "1px solid "#E5E7EB",
                   fontSize: "0.82rem",
                   color: "#111827",
                   display: "flex",
