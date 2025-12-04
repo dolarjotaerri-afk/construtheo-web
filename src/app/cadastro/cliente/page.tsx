@@ -4,8 +4,38 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { cadastrarCliente } from "../../../lib/clienteService";
+import { supabase } from "../../../lib/supabaseClient";
 
 const steps = ["Dados básicos", "Contato", "Localização"];
+
+// helper pra pegar localização atual
+async function obterCoordenadasAtual(): Promise<{
+  latitude: number;
+  longitude: number;
+} | null> {
+  if (typeof window === "undefined" || !("geolocation" in navigator)) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        console.error("Erro ao obter localização do cliente:", err);
+        resolve(null); // não trava o cadastro se der erro
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+      }
+    );
+  });
+}
 
 export default function CadastroClientePage() {
   const router = useRouter();
@@ -20,27 +50,105 @@ export default function CadastroClientePage() {
     const form = e.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
 
-    const nome = (formData.get("nome") as string) || "Cliente Demo";
-    const apelido = (formData.get("apelido") as string) || nome;
-    const email =
-      (formData.get("email") as string) || "demo@construtheo.com";
-    const whatsapp =
-      (formData.get("whatsapp") as string) || "(00) 00000-0000";
-    const senha = (formData.get("senha") as string) || "123456";
-    const cidade = (formData.get("cidade") as string) || "Igaratá";
-    const estado = (formData.get("estado") as string) || "SP";
-    const bairro = (formData.get("bairro") as string) || "";
+    const nome = ((formData.get("nome") as string) || "").trim();
+    const apelido = ((formData.get("apelido") as string) || "").trim() || nome;
+
+    const emailRaw = (formData.get("email") as string) || "";
+    const email = emailRaw.trim().toLowerCase();
+
+    const whatsapp = ((formData.get("whatsapp") as string) || "").trim();
+
+    const senha = ((formData.get("senha") as string) || "").trim();
+
+    const cidade = ((formData.get("cidade") as string) || "").trim();
+    const estado = ((formData.get("estado") as string) || "").trim();
+    const bairro = ((formData.get("bairro") as string) || "").trim();
+
     const aceitaOfertas =
       formData.get("aceita_ofertas_whatsapp") === "on";
 
+    // CPF (opcional, mas se preencher a gente valida e usa)
+    const cpfRaw = ((formData.get("cpf") as string) || "").trim();
+    const cpf = cpfRaw.replace(/\D/g, ""); // só números
+
     if (!nome || !email || !whatsapp || !senha || !cidade) {
-      setMensagem("Preencha pelo menos Nome, WhatsApp, E-mail, Senha e Cidade.");
+      setMensagem(
+        "Preencha pelo menos Nome, WhatsApp, E-mail, Senha e Cidade."
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (senha.length < 6) {
+      setMensagem("A senha deve ter pelo menos 6 caracteres.");
+      setLoading(false);
+      return;
+    }
+
+    if (cpf && cpf.length !== 11) {
+      setMensagem("CPF inválido. Informe os 11 dígitos.");
       setLoading(false);
       return;
     }
 
     try {
-      // 1) Salva no Supabase com os CAMPOS REAIS da tabela "clientes"
+      // 🔍 1) Verificar se o e-mail já existe em qualquer tabela de usuário
+      const tabelasUsuarios = ["clientes", "profissionais", "empresas"] as const;
+
+      const resultadosEmail = await Promise.all(
+        tabelasUsuarios.map((tabela) =>
+          supabase
+            .from(tabela)
+            .select("id", { count: "exact", head: true })
+            .eq("email", email)
+        )
+      );
+
+      const emailJaExiste = resultadosEmail.some(({ count, error }) => {
+        if (error) {
+          console.error(`Erro ao verificar e-mail:`, error.message);
+          return false;
+        }
+        return (count ?? 0) > 0;
+      });
+
+      if (emailJaExiste) {
+        setMensagem(
+          "Este e-mail já está cadastrado na plataforma. Faça login ou recupere sua senha."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 🔍 2) Verificar se o CPF já existe para clientes (se informado)
+      if (cpf) {
+        const { count: countCpf, error: erroCpf } = await supabase
+          .from("clientes")
+          .select("id", { count: "exact", head: true })
+          .eq("cpf", cpf);
+
+        if (erroCpf) {
+          console.error("Erro ao verificar CPF:", erroCpf.message);
+        }
+
+        if ((countCpf ?? 0) > 0) {
+          setMensagem("Este CPF já está cadastrado como cliente no ConstruThéo.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 📍 3) Tentar obter geolocalização do cliente
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+
+      const coords = await obterCoordenadasAtual();
+      if (coords) {
+        latitude = coords.latitude;
+        longitude = coords.longitude;
+      }
+
+      // 4) Salva no Supabase com os CAMPOS REAIS da tabela "clientes"
       await cadastrarCliente({
         nome,
         apelido,
@@ -51,10 +159,34 @@ export default function CadastroClientePage() {
         estado,
         bairro,
         aceitaOfertasWhatsapp: aceitaOfertas,
-        // fotoPerfil: null, // depois a gente integra upload
+        // fotoPerfil: null, // se tiver depois
       });
 
-      // 2) Mantém um demo/local no localStorage pra usar no painel
+      // 5) Atualiza CPF e localização na tabela "clientes"
+      try {
+        const { data: userData, error: erroUser } =
+          await supabase.auth.getUser();
+
+        if (!erroUser && userData?.user) {
+          const userId = userData.user.id;
+
+          await supabase
+            .from("clientes")
+            .update({
+              cpf: cpf || null,
+              latitude,
+              longitude,
+            })
+            .eq("id", userId);
+        }
+      } catch (errUpdate) {
+        console.error(
+          "Erro ao atualizar CPF/localização do cliente:",
+          errUpdate
+        );
+      }
+
+      // 6) Mantém resumo no localStorage pra usar no painel
       const demoCliente = {
         nome,
         apelido,
@@ -64,7 +196,10 @@ export default function CadastroClientePage() {
         estado,
         bairro,
         aceitaOfertas,
+        cpf: cpf || null,
         localizacao: `${cidade} - ${estado}`,
+        latitude,
+        longitude,
         criadoEm: new Date().toISOString(),
       };
 
@@ -79,7 +214,7 @@ export default function CadastroClientePage() {
 
       form.reset();
 
-      // 3) Redireciona pro painel do cliente
+      // 7) Redireciona pro painel do cliente
       router.push("/painel/cliente");
     } catch (error) {
       console.error("Erro ao cadastrar cliente:", error);
@@ -320,6 +455,36 @@ export default function CadastroClientePage() {
           />
         </div>
 
+        {/* CPF (opcional) */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <label
+            htmlFor="cpf"
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              marginBottom: "4px",
+              color: "#374151",
+            }}
+          >
+            CPF (opcional)
+          </label>
+          <input
+            id="cpf"
+            name="cpf"
+            placeholder="000.000.000-00"
+            style={{
+              padding: "12px 14px",
+              borderRadius: "10px",
+              border: "1px solid #D1D5DB",
+              background: "#FFFFFF",
+              fontSize: "0.9rem",
+              outline: "none",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              transition: "all 0.2s",
+            }}
+          />
+        </div>
+
         {/* Senha */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label
@@ -337,7 +502,7 @@ export default function CadastroClientePage() {
             id="senha"
             name="senha"
             type="password"
-            placeholder="Crie uma senha"
+            placeholder="Crie uma senha (mínimo 6 caracteres)"
             style={{
               padding: "12px 14px",
               borderRadius: "10px",
