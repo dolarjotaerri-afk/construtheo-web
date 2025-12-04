@@ -1,20 +1,21 @@
-// src/lib/clienteService.ts
-import { supabase } from "../lib/supabaseClient";
+"use server";
 
-export type NovoCliente = {
+import { supabase } from "./supabaseClient";
+
+type NovoCliente = {
   nome: string;
-  apelido?: string;
+  apelido: string;
   whatsapp: string;
   email: string;
   senha: string;
   cidade: string;
   estado?: string;
   bairro?: string;
+  cep?: string | null;
   aceitaOfertasWhatsapp?: boolean;
-  fotoPerfil?: string | null;
 };
 
-export async function cadastrarCliente(cliente: NovoCliente) {
+export async function cadastrarCliente(dados: NovoCliente) {
   const {
     nome,
     apelido,
@@ -24,33 +25,64 @@ export async function cadastrarCliente(cliente: NovoCliente) {
     cidade,
     estado,
     bairro,
+    cep,
     aceitaOfertasWhatsapp,
-    fotoPerfil,
-  } = cliente;
+  } = dados;
 
-  const { data, error } = await supabase
-    .from("clientes")
-    .insert([
-      {
-        nome,
-        apelido,
-        whatsapp,
-        email,
-        senha,
-        cidade,
-        estado,
-        bairro,
-        aceita_ofertas_whatsapp: aceitaOfertasWhatsapp ?? false,
-        foto_perfil: fotoPerfil ?? null,
+  // 1) Criar usuário na Auth
+  const { data: signUpData, error: signUpError } =
+    await supabase.auth.signUp({
+      email,
+      password: senha,
+      options: {
+        data: {
+          tipo: "cliente",
+          nome,
+          apelido,
+        },
       },
-    ])
-    .select()
-    .single();
+    });
 
-  if (error) {
-    console.error("Erro ao cadastrar cliente:", error);
-    throw new Error(error.message || "Erro ao cadastrar cliente.");
+  if (signUpError) {
+    console.error("Erro ao criar usuário (cliente):", signUpError);
+    throw new Error(
+      signUpError.message || "Não foi possível criar o usuário."
+    );
   }
 
-  return data;
+  const user = signUpData.user;
+  if (!user) {
+    throw new Error("Usuário não retornado após o cadastro.");
+  }
+
+  // 2) Monta localizacao amigável
+  const localizacao = `${cidade}${
+    estado ? ` - ${estado}` : ""
+  }${bairro ? ` (${bairro})` : ""}`;
+
+  // 3) Salva na tabela clientes
+  const { error: insertError } = await supabase.from("clientes").insert([
+    {
+      id: user.id, // mesmo id da Auth
+      nome,
+      apelido,
+      whatsapp,
+      email,
+      cidade,
+      estado,
+      bairro,
+      cep: cep || null,
+      localizacao,
+      aceita_ofertas_whatsapp: aceitaOfertasWhatsapp ?? true,
+    },
+  ]);
+
+  if (insertError) {
+    console.error("Erro ao salvar cliente na tabela:", insertError);
+    throw new Error(
+      insertError.message || "Não foi possível salvar o cadastro do cliente."
+    );
+  }
+
+  return { id: user.id };
 }
