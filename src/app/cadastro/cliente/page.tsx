@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { cadastrarCliente } from "../../../lib/clienteService";
+// import { cadastrarCliente } from "../../../lib/clienteService"; // não estamos usando mais
 import { buscarEnderecoPorCep } from "../../../lib/cepService";
+import { supabase } from "../../../lib/supabaseClient";
 
 const steps = ["Dados básicos", "Contato", "Localização"];
 
@@ -46,94 +47,102 @@ export default function CadastroClientePage() {
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-  e.preventDefault();
-  setErro(null);
-  setLoading(true);
+    e.preventDefault();
+    setMensagem(null);
+    setLoading(true);
 
-  try {
-    const form = e.currentTarget as HTMLFormElement;
-    const formData = new FormData(form);
+    try {
+      const form = e.currentTarget as HTMLFormElement;
+      const formData = new FormData(form);
 
-    const nome = String(formData.get("nome") || "").trim();
-    const email = String(formData.get("email") || "").trim().toLowerCase();
-    const senhaForm = String(formData.get("senha") || "");
-    const confirmarSenhaForm = String(formData.get("confirmar_senha") || "");
+      const nome = String(formData.get("nome") || "").trim();
+      const email = String(formData.get("email") || "").trim().toLowerCase();
+      const senhaForm = String(formData.get("senha") || "");
+      const confirmarSenhaForm = String(formData.get("confirmar_senha") || "");
 
-    if (!nome || !email || !senhaForm || !confirmarSenhaForm) {
-      throw new Error("Preencha todos os campos obrigatórios.");
+      if (!nome || !email || !senhaForm || !confirmarSenhaForm) {
+        throw new Error("Preencha todos os campos obrigatórios.");
+      }
+
+      if (senhaForm.length < 6) {
+        throw new Error("A senha precisa ter pelo menos 6 caracteres.");
+      }
+
+      if (senhaForm !== confirmarSenhaForm) {
+        throw new Error("As senhas não conferem.");
+      }
+
+      // 1) Cadastra no Auth
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email,
+          password: senhaForm,
+          options: {
+            data: {
+              nome,
+              tipo_usuario: "cliente",
+            },
+          },
+        });
+
+      if (signUpError) {
+        throw signUpError;
+      }
+
+      const user = signUpData.user;
+      if (!user) {
+        throw new Error("Não foi possível criar o usuário. Tente novamente.");
+      }
+
+      // 2) Insere na tabela clientes
+      const { error: insertError } = await supabase.from("clientes").insert({
+        id: user.id, // FK para auth.users
+        nome,
+        email,
+        apelido: String(formData.get("apelido") || "").trim() || null,
+        whatsapp: String(formData.get("whatsapp") || "").trim() || null,
+        cep: String(formData.get("cep") || ""),
+        cidade: String(formData.get("cidade") || ""),
+        estado: String(formData.get("estado") || ""),
+        bairro: String(formData.get("bairro") || ""),
+        aceita_ofertas_whatsapp:
+          formData.get("aceita_ofertas_whatsapp") === "on",
+        created_at: new Date().toISOString(),
+      });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // deu tudo certo
+      router.push("/cadastro/sucesso");
+    } catch (err: any) {
+      console.error("ERRO AO CRIAR CONTA:", err);
+
+      const msg = String(err?.message || "").toLowerCase();
+
+      if (msg.includes("already registered") || msg.includes("duplicate key")) {
+        setMensagem("Esse e-mail já está cadastrado. Tente fazer login.");
+      } else if (msg.includes("password")) {
+        setMensagem("Senha inválida. Use pelo menos 6 caracteres.");
+      } else if (
+        msg.includes("row-level security") ||
+        msg.includes("permission")
+      ) {
+        setMensagem(
+          "Erro de permissão ao salvar seus dados. Verifique as políticas RLS da tabela no Supabase."
+        );
+      } else {
+        setMensagem(
+          err?.message ||
+            "Erro ao criar sua conta. Tente novamente em instantes."
+        );
+      }
+    } finally {
+      setLoading(false);
     }
-
-    if (senhaForm.length < 6) {
-      throw new Error("A senha precisa ter pelo menos 6 caracteres.");
-    }
-
-    if (senhaForm !== confirmarSenhaForm) {
-      throw new Error("As senhas não conferem.");
-    }
-
-    // 1) Cadastra no Auth
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: senhaForm,
-      options: {
-        data: {
-          nome,
-          // aqui você pode mandar mais metadados, tipo tipo_usuario: "cliente" etc
-        },
-      },
-    });
-
-    if (signUpError) {
-      throw signUpError;
-    }
-
-    const user = signUpData.user;
-    if (!user) {
-      throw new Error("Não foi possível criar o usuário. Tente novamente.");
-    }
-
-    // 2) Insere na tabela específica (AJUSTE AQUI: clientes / empresas)
-    const { error: insertError } = await supabase.from("clientes").insert({
-      id: user.id, // FK para auth.users
-      nome,
-      email,
-      // coloque aqui os outros campos do form (cidade, estado, bairro, cep etc)
-      cep: String(formData.get("cep") || ""),
-      cidade: String(formData.get("cidade") || ""),
-      estado: String(formData.get("estado") || ""),
-      bairro: String(formData.get("bairro") || ""),
-      created_at: new Date().toISOString(),
-    });
-
-    if (insertError) {
-      throw insertError;
-    }
-
-    // deu tudo certo
-    router.push("/cadastro/sucesso");
-  } catch (err: any) {
-    console.error("ERRO AO CRIAR CONTA:", err);
-
-    const msg = String(err?.message || "").toLowerCase();
-
-    if (msg.includes("already registered") || msg.includes("duplicate key")) {
-      setErro("Esse e-mail já está cadastrado. Tente fazer login.");
-    } else if (msg.includes("password")) {
-      setErro("Senha inválida. Use pelo menos 6 caracteres.");
-    } else if (msg.includes("row-level security") || msg.includes("permission")) {
-      setErro(
-        "Erro de permissão ao salvar seus dados. Verifique as políticas RLS da tabela no Supabase."
-      );
-    } else {
-      setErro(
-        err?.message ||
-          "Erro ao criar sua conta. Tente novamente em instantes."
-      );
-    }
-  } finally {
-    setLoading(false);
   }
-}
+
   return (
     <div
       style={{
@@ -396,6 +405,37 @@ export default function CadastroClientePage() {
           />
         </div>
 
+        {/* Confirmação de senha */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <label
+            htmlFor="confirmar_senha"
+            style={{
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              marginBottom: "4px",
+              color: "#374151",
+            }}
+          >
+            Confirmar senha
+          </label>
+          <input
+            id="confirmar_senha"
+            name="confirmar_senha"
+            type="password"
+            placeholder="Repita a senha"
+            style={{
+              padding: "12px 14px",
+              borderRadius: "10px",
+              border: "1px solid #D1D5DB",
+              background: "#FFFFFF",
+              fontSize: "0.9rem",
+              outline: "none",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+              transition: "all 0.2s",
+            }}
+          />
+        </div>
+
         {/* CEP */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           <label
@@ -599,7 +639,7 @@ export default function CadastroClientePage() {
             style={{
               marginTop: "6px",
               fontSize: "0.8rem",
-              color: "#0369A1",
+              color: "#DC2626",
               textAlign: "center",
             }}
           >
