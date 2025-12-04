@@ -5,7 +5,7 @@ import Image from "next/image";
 export function WhatsAppSupportButton() {
   const numero = "5511988214713"; // 👉 coloque aqui o número do WhatsApp Business
   const mensagem = encodeURIComponent(
-    "Olá! Estou Utilizando o Aplicativo ConstruThéo."
+    "Olá! Estou utilizando o Aplicativo ConstruThéo."
   );
 
   const url = `https://wa.me/${numero}?text=${mensagem}`;
