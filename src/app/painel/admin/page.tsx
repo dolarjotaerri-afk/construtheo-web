@@ -1017,24 +1017,24 @@ export default function PainelAdminPage() {
               </div>
             </Link>
 
-            <Link href="/admin/denuncias" style={{ textDecoration: "none" }}>
-              <div
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "999px",
-                  background: "#F9FAFB",
-                  border: "1px solid "#E5E7EB",
-                  fontSize: "0.82rem",
-                  color: "#111827",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span>Denúncias, bloqueios e histórico de segurança</span>
-                <span>→</span>
-              </div>
-            </Link>
+<Link href="/admin/denuncias" style={{ textDecoration: "none" }}>
+  <div
+    style={{
+      padding: "10px 12px",
+      borderRadius: "999px",
+      background: "#F9FAFB",
+      border: "1px solid #E5E7EB",
+      fontSize: "0.82rem",
+      color: "#111827",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    }}
+  >
+    <span>Denúncias, bloqueios e histórico de segurança</span>
+    <span>→</span>
+  </div>
+</Link>
 
             <Link
               href="/admin/calculadoras"
