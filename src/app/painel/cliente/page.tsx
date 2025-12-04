@@ -59,17 +59,18 @@ export default function CadastroClientePage() {
       const email = String(formData.get("email") || "")
         .trim()
         .toLowerCase();
-      const whatsapp = String(formData.get("whatsapp") || "")
-        .trim()
-        .toLowerCase();
+      const whatsapp = String(formData.get("whatsapp") || "").trim();
 
       const senhaForm = String(formData.get("senha") || "");
       const confirmarSenhaForm = String(formData.get("confirmar_senha") || "");
 
+      // valores vindos do form (inputs controlados usam o state,
+      // mas pego aqui pra garantir)
       const cepForm = String(formData.get("cep") || "");
       const cidadeForm = String(formData.get("cidade") || "");
       const estadoForm = String(formData.get("estado") || "");
       const bairroForm = String(formData.get("bairro") || "");
+
       const aceitaOfertas =
         formData.get("aceita_ofertas_whatsapp") === "on";
 
@@ -84,6 +85,12 @@ export default function CadastroClientePage() {
       if (senhaForm !== confirmarSenhaForm) {
         throw new Error("As senhas não conferem.");
       }
+
+      // usa o que tiver: primeiro form, depois state
+      const cepFinal = (cepForm || cep).replace(/\D/g, "");
+      const cidadeFinal = cidadeForm || cidade;
+      const estadoFinal = estadoForm || estado;
+      const bairroFinal = bairroForm || bairro;
 
       // 1) Cadastra no Auth
       const { data: signUpData, error: signUpError } =
@@ -114,10 +121,10 @@ export default function CadastroClientePage() {
         apelido,
         email,
         whatsapp,
-        cep: cepForm,
-        cidade: cidadeForm,
-        estado: estadoForm,
-        bairro: bairroForm,
+        cep: cepFinal,
+        cidade: cidadeFinal,
+        estado: estadoFinal,
+        bairro: bairroFinal,
         aceita_ofertas_whatsapp: aceitaOfertas,
         created_at: new Date().toISOString(),
       });
@@ -126,7 +133,28 @@ export default function CadastroClientePage() {
         throw insertError;
       }
 
-      // 3) Redireciona direto para o painel do cliente
+      // 3) Salva resumo no localStorage (para o painel/cliente usar)
+      if (typeof window !== "undefined") {
+        const resumoCliente = {
+          id: user.id,
+          nome,
+          apelido,
+          email,
+          whatsapp,
+          cep: cepFinal,
+          cidade: cidadeFinal,
+          estado: estadoFinal,
+          bairro: bairroFinal,
+          aceita_ofertas_whatsapp: aceitaOfertas,
+        };
+
+        localStorage.setItem(
+          "construtheo_cliente_atual",
+          JSON.stringify(resumoCliente)
+        );
+      }
+
+      // 4) Redireciona para o painel do cliente
       router.push("/painel/cliente");
     } catch (err: any) {
       console.error("ERRO AO CRIAR CONTA:", err);
