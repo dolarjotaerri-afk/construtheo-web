@@ -98,16 +98,37 @@ const areasConfig: Record<
   },
 };
 
+// helper pra pegar localização atual do navegador
+async function obterCoordenadasAtual(): Promise<{
+  latitude: number;
+  longitude: number;
+} | null> {
+  if (typeof window === "undefined" || !("geolocation" in navigator)) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        console.error("Erro ao obter localização do profissional:", err);
+        resolve(null); // não trava o cadastro
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+      }
+    );
+  });
+}
+
 export default function CadastroProfissionalPage() {
   const router = useRouter();
-
-  // se você realmente precisa pegar algo da URL tipo ?funcao=...
-  const [query, setQuery] = useState<URLSearchParams | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    setQuery(new URLSearchParams(window.location.search));
-  }, []);
 
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<string | null>(
     null
@@ -150,9 +171,14 @@ export default function CadastroProfissionalPage() {
 
       const nome = ((formData.get("nome") as string) || "").trim();
       const apelidoForm = ((formData.get("apelido") as string) || "").trim();
-      const documento = ((formData.get("documento") as string) || "").trim();
+
+      const documentoRaw =
+        ((formData.get("documento") as string) || "").trim();
+      const cpf = documentoRaw.replace(/\D/g, ""); // só números
+
       const emailRaw = (formData.get("email") as string) || "";
       const email = emailRaw.trim().toLowerCase();
+
       const whatsapp = ((formData.get("whatsapp") as string) || "").trim();
       const experiencia =
         ((formData.get("experiencia") as string) || "").trim();
@@ -194,7 +220,69 @@ export default function CadastroProfissionalPage() {
         return;
       }
 
-      // 👉 1) Criar usuário na Auth
+      if (cpf && cpf.length !== 11) {
+        setErro("CPF inválido. Informe os 11 dígitos.");
+        setLoading(false);
+        return;
+      }
+
+      // 🔍 1) Verificar se o e-mail já existe em qualquer tabela de usuário
+      const tabelasUsuarios = ["clientes", "profissionais", "empresas"] as const;
+
+      const resultadosEmail = await Promise.all(
+        tabelasUsuarios.map((tabela) =>
+          supabase
+            .from(tabela)
+            .select("id", { count: "exact", head: true })
+            .eq("email", email)
+        )
+      );
+
+      const emailJaExiste = resultadosEmail.some(({ count, error }) => {
+        if (error) {
+          console.error(`Erro ao verificar e-mail (${email}) em uma tabela:`, error.message);
+          return false;
+        }
+        return (count ?? 0) > 0;
+      });
+
+      if (emailJaExiste) {
+        setErro(
+          "Este e-mail já está cadastrado na plataforma. Faça login ou recupere sua senha."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 🔍 2) Verificar se o CPF já existe para profissionais (se informado)
+      if (cpf) {
+        const { count: countCpf, error: erroCpf } = await supabase
+          .from("profissionais")
+          .select("id", { count: "exact", head: true })
+          .eq("cpf", cpf);
+
+        if (erroCpf) {
+          console.error("Erro ao verificar CPF do profissional:", erroCpf.message);
+        }
+
+        if ((countCpf ?? 0) > 0) {
+          setErro("Este CPF já está cadastrado como profissional no ConstruThéo.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 📍 3) Tentar obter geolocalização do profissional
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+
+      const coords = await obterCoordenadasAtual();
+      if (coords) {
+        latitude = coords.latitude;
+        longitude = coords.longitude;
+      }
+
+      // 👉 4) Criar usuário na Auth
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email,
@@ -222,7 +310,7 @@ export default function CadastroProfissionalPage() {
         return;
       }
 
-      // 👉 2) Inserir na tabela profissionais amarrando com o user.id
+      // 👉 5) Inserir na tabela profissionais amarrando com o user.id
       const { data, error } = await supabase
         .from("profissionais")
         .insert([
@@ -230,14 +318,16 @@ export default function CadastroProfissionalPage() {
             id: user.id, // ID igual ao da Auth
             nome,
             apelido,
-            // se criar a coluna depois, é só descomentar:
-            // documento,
+            cpf: cpf || null, // coluna cpf na tabela
             email,
             whatsapp,
             experiencia,
             localizacao,
+            disponibilidade,
             area: areaPrincipal, // coluna "area" no banco
             funcao: funcaoPrincipal, // coluna "funcao" no banco
+            latitude,
+            longitude,
           },
         ])
         .select("id, nome, apelido, area, funcao")
@@ -262,7 +352,9 @@ export default function CadastroProfissionalPage() {
           localizacao,
           experiencia,
           disponibilidade,
-          documento,
+          cpf: cpf || null,
+          latitude,
+          longitude,
         };
 
         localStorage.setItem(
@@ -271,7 +363,7 @@ export default function CadastroProfissionalPage() {
         );
       }
 
-      // 👉 3) Redirecionar pro painel usando o ID do usuário
+      // 👉 6) Redirecionar pro painel usando o ID do usuário
       router.push(
         `/painel/profissional?id=${user.id}&apelido=${encodeURIComponent(
           apelido
@@ -280,6 +372,7 @@ export default function CadastroProfissionalPage() {
     } catch (err) {
       console.error(err);
       setErro("Ocorreu um erro inesperado. Tente novamente.");
+    } finally {
       setLoading(false);
     }
   }
@@ -465,7 +558,7 @@ export default function CadastroProfissionalPage() {
             />
           </div>
 
-          {/* Documento */}
+          {/* CPF / documento */}
           <div style={{ display: "flex", flexDirection: "column" }}>
             <label
               htmlFor="documento"
@@ -476,7 +569,7 @@ export default function CadastroProfissionalPage() {
                 color: "#374151",
               }}
             >
-              CPF ou documento
+              CPF (somente números)
             </label>
             <input
               id="documento"
@@ -556,7 +649,7 @@ export default function CadastroProfissionalPage() {
             />
           </div>
 
-          {/* Senhas - agora EMPILHADAS */}
+          {/* Senhas - EMPILHADAS */}
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <label
@@ -783,8 +876,8 @@ export default function CadastroProfissionalPage() {
                 color: "#6B7280",
               }}
             >
-              Usamos sua cidade para mostrar clientes que estão construindo ou
-              reformando perto de você.
+              Usamos sua cidade e sua localização aproximada para conectar você
+              com clientes em um raio de até 20km.
             </p>
           </div>
 
