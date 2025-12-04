@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Poppins } from "next/font/google";
+import { WhatsAppSupportButton } from "../components/WhatsAppSupportButton";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -19,7 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={poppins.className}>{children}</body>
+      <body className={poppins.className}>
+        {children}
+
+        {/* Botão flutuante global de suporte pelo WhatsApp */}
+        <WhatsAppSupportButton />
+      </body>
     </html>
   );
 }
