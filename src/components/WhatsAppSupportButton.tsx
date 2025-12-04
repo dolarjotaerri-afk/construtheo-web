@@ -1,71 +1,45 @@
 "use client";
 
-import React from "react";
-
-const whatsappNumber = "5511988214713"; // <- TROCA pelo número do WhatsApp Business (só números)
-const defaultMessage =
-  "Olá, estou utilizando o aplicativo ConstruThéo.";
+import Image from "next/image";
 
 export function WhatsAppSupportButton() {
-  const link = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-    defaultMessage
-  )}`;
+  const numero = "5511988214713"; // 👉 coloque aqui o número do WhatsApp Business
+  const mensagem = encodeURIComponent(
+    "Olá! Estou Utilizando o Aplicativo ConstruThéo."
+  );
+
+  const url = `https://wa.me/${numero}?text=${mensagem}`;
 
   return (
     <a
-      href={link}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
       style={{
         position: "fixed",
-        right: "16px",
-        bottom: "20px",
+        bottom: "22px",
+        right: "22px",
         zIndex: 9999,
-        textDecoration: "none",
+        width: "62px",
+        height: "62px",
+        borderRadius: "50%",
+        background: "#25D366",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        boxShadow: "0 6px 16px rgba(0,0,0,0.25)",
+        cursor: "pointer",
       }}
     >
-      <div
+      <Image
+        src="/whatsapp-logo.png"
+        alt="WhatsApp Suporte"
+        width={36}
+        height={36}
         style={{
-          width: 58,
-          height: 58,
-          borderRadius: "999px",
-          background:
-            "radial-gradient(circle at 30% 30%, #25D366, #128C7E)",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          border: "2px solid #ECFEFF",
+          filter: "brightness(0) invert(1)", // deixa o ícone branco automático
         }}
-      >
-        {/* Ícone simples "WhatsApp" em SVG (bem leve) */}
-        <span
-          style={{
-            fontSize: "30px",
-          }}
-        >
-          💬
-        </span>
-      </div>
-
-      {/* Balãozinho “Suporte” opcional */}
-      <div
-        style={{
-          position: "absolute",
-          right: 70,
-          bottom: 14,
-          padding: "6px 10px",
-          borderRadius: 999,
-          background: "#0F172A",
-          color: "#F9FAFB",
-          fontSize: "0.75rem",
-          fontWeight: 500,
-          boxShadow: "0 3px 8px rgba(0,0,0,0.2)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        Suporte pelo WhatsApp
-      </div>
+      />
     </a>
   );
 }
