@@ -440,7 +440,7 @@ export default function PainelAdminPage() {
                   padding: "8px 10px",
                   borderRadius: "999px",
                   background: "#FFFFFF",
-                  border: "1px solid "#E5E7EB",
+                  border: "1px solid #E5E7EB",
                   fontSize: "0.8rem",
                   color: "#111827",
                   textAlign: "center",
