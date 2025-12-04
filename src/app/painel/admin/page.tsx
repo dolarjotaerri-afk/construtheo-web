@@ -37,54 +37,6 @@ type Alerta = {
 
 // ---------- MOCKS (podem virar dados reais depois) ----------
 
-const totalClientes = 1247;
-const onlineClientes = 18;
-
-const totalProfissionais = 326;
-const onlineProfissionais = 9;
-
-const totalEmpresas = 57;
-const onlineEmpresas = 4;
-
-const totalUsuarios = totalClientes + totalProfissionais + totalEmpresas;
-const onlineTotal =
-  onlineClientes + onlineProfissionais + onlineEmpresas;
-
-const metricasResumo: Metrica[] = [
-  {
-    id: 1,
-    chave: "clientes",
-    titulo: "Clientes cadastrados",
-    valor: totalClientes.toLocaleString("pt-BR"),
-    detalhe: "pessoas organizando sua obra",
-    onlineAgora: onlineClientes,
-  },
-  {
-    id: 2,
-    chave: "profissionais",
-    titulo: "Profissionais cadastrados",
-    valor: totalProfissionais.toLocaleString("pt-BR"),
-    detalhe: "prestando serviços pela plataforma",
-    onlineAgora: onlineProfissionais,
-  },
-  {
-    id: 3,
-    chave: "empresas",
-    titulo: "Empresas cadastradas",
-    valor: totalEmpresas.toLocaleString("pt-BR"),
-    detalhe: "fornecedores e parceiros ativos",
-    onlineAgora: onlineEmpresas,
-  },
-  {
-    id: 4,
-    chave: "total",
-    titulo: "Total de usuários",
-    valor: totalUsuarios.toLocaleString("pt-BR"),
-    detalhe: "somando clientes, profissionais e empresas",
-    onlineAgora: onlineTotal,
-  },
-];
-
 const atividadesRecentes: Atividade[] = [
   {
     id: 1,
@@ -162,6 +114,10 @@ export default function PainelAdminPage() {
     useState(false);
 
   const [verificandoAdmin, setVerificandoAdmin] = useState(true);
+    // métricas reais
+  const [metricasResumo, setMetricasResumo] = useState<Metrica[]>([]);
+  const [carregandoMetricas, setCarregandoMetricas] = useState(true);
+
 
   // --------- Verifica se usuário é ADMIN ---------
   useEffect(() => {
@@ -188,6 +144,92 @@ export default function PainelAdminPage() {
 
     verificarAdmin();
   }, [router]);
+  // --------- Carrega MÉTRICAS reais (clientes, profissionais, empresas) ---------
+  useEffect(() => {
+    if (verificandoAdmin) return;
+
+    const carregarMetricas = async () => {
+      setCarregandoMetricas(true);
+      try {
+        // Conta clientes
+        const { count: clientesCount, error: erroClientes } = await supabase
+          .from("clientes")
+          .select("*", { count: "exact", head: true });
+
+        if (erroClientes) {
+          console.error("Erro ao contar clientes:", erroClientes);
+        }
+
+        // Conta profissionais
+        const { count: profsCount, error: erroProfs } = await supabase
+          .from("profissionais")
+          .select("*", { count: "exact", head: true });
+
+        if (erroProfs) {
+          console.error("Erro ao contar profissionais:", erroProfs);
+        }
+
+        // Conta empresas
+        const { count: empsCount, error: erroEmps } = await supabase
+          .from("empresas")
+          .select("*", { count: "exact", head: true });
+
+        if (erroEmps) {
+          console.error("Erro ao contar empresas:", erroEmps);
+        }
+
+        const totalClientes = clientesCount ?? 0;
+        const totalProfissionais = profsCount ?? 0;
+        const totalEmpresas = empsCount ?? 0;
+        const totalUsuarios =
+          totalClientes + totalProfissionais + totalEmpresas;
+
+        // Por enquanto, onlineAgora = 0 (depois conectamos na tabela de online)
+        const metricas: Metrica[] = [
+          {
+            id: 1,
+            chave: "clientes",
+            titulo: "Clientes cadastrados",
+            valor: totalClientes.toLocaleString("pt-BR"),
+            detalhe: "pessoas organizando sua obra",
+            onlineAgora: 0,
+          },
+          {
+            id: 2,
+            chave: "profissionais",
+            titulo: "Profissionais cadastrados",
+            valor: totalProfissionais.toLocaleString("pt-BR"),
+            detalhe: "prestando serviços pela plataforma",
+            onlineAgora: 0,
+          },
+          {
+            id: 3,
+            chave: "empresas",
+            titulo: "Empresas cadastradas",
+            valor: totalEmpresas.toLocaleString("pt-BR"),
+            detalhe: "fornecedores e parceiros ativos",
+            onlineAgora: 0,
+          },
+          {
+            id: 4,
+            chave: "total",
+            titulo: "Total de usuários",
+            valor: totalUsuarios.toLocaleString("pt-BR"),
+            detalhe: "somando clientes, profissionais e empresas",
+            onlineAgora: 0,
+          },
+        ];
+
+        setMetricasResumo(metricas);
+      } catch (err) {
+        console.error("Erro geral ao carregar métricas:", err);
+      } finally {
+        setCarregandoMetricas(false);
+      }
+    };
+
+    carregarMetricas();
+  }, [verificandoAdmin]);
 
   // --------- Carrega pendências reais do Supabase ---------
   useEffect(() => {
@@ -491,6 +533,7 @@ export default function PainelAdminPage() {
         </section>
 
         {/* RESUMO RÁPIDO */}
+        {/* RESUMO RÁPIDO */}
         <section>
           <h2
             style={{
@@ -502,64 +545,89 @@ export default function PainelAdminPage() {
           >
             Visão geral da plataforma
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: "8px",
-            }}
-          >
-            {metricasResumo.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  padding: "10px 10px",
-                  borderRadius: "16px",
-                  background: "#F9FAFB",
-                  border: "1px solid #E5E7EB",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "2px",
-                }}
-              >
-                <span
+
+          {carregandoMetricas && (
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: "#6B7280",
+              }}
+            >
+              Carregando métricas...
+            </p>
+          )}
+
+          {!carregandoMetricas && metricasResumo.length === 0 && (
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: "#6B7280",
+              }}
+            >
+              Não foi possível carregar as métricas agora.
+            </p>
+          )}
+
+          {!carregandoMetricas && metricasResumo.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: "8px",
+              }}
+            >
+              {metricasResumo.map((m) => (
+                <div
+                  key={m.id}
                   style={{
-                    fontSize: "0.76rem",
-                    color: "#6B7280",
+                    padding: "10px 10px",
+                    borderRadius: "16px",
+                    background: "#F9FAFB",
+                    border: "1px solid #E5E7EB",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
                   }}
                 >
-                  {m.titulo}
-                </span>
-                <span
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: "#111827",
-                  }}
-                >
-                  {m.valor}
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "#9CA3AF",
-                  }}
-                >
-                  {m.detalhe}
-                </span>
-                <span
-                  style={{
-                    marginTop: "4px",
-                    fontSize: "0.7rem",
-                    color: "#16A34A",
-                    fontWeight: 600,
-                  }}
-                >
-                  online agora: {m.onlineAgora.toLocaleString("pt-BR")}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <span
+                    style={{
+                      fontSize: "0.76rem",
+                      color: "#6B7280",
+                    }}
+                  >
+                    {m.titulo}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      color: "#111827",
+                    }}
+                  >
+                    {m.valor}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      color: "#9CA3AF",
+                    }}
+                  >
+                    {m.detalhe}
+                  </span>
+                  <span
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "0.7rem",
+                      color: "#16A34A",
+                      fontWeight: 600,
+                    }}
+                  >
+                    online agora: {m.onlineAgora.toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ATIVIDADES RECENTES */}
