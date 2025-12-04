@@ -46,94 +46,94 @@ export default function CadastroClientePage() {
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setMensagem(null);
-    setLoading(true);
+  e.preventDefault();
+  setErro(null);
+  setLoading(true);
 
+  try {
     const form = e.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
 
-    const nome = ((formData.get("nome") as string) || "").trim();
-    const apelidoForm =
-      ((formData.get("apelido") as string) || "").trim();
-    const emailRaw = (formData.get("email") as string) || "";
-    const email = emailRaw.trim().toLowerCase();
-    const whatsapp =
-      ((formData.get("whatsapp") as string) || "").trim();
-    const senha = ((formData.get("senha") as string) || "").trim();
+    const nome = String(formData.get("nome") || "").trim();
+    const email = String(formData.get("email") || "").trim().toLowerCase();
+    const senhaForm = String(formData.get("senha") || "");
+    const confirmarSenhaForm = String(formData.get("confirmar_senha") || "");
 
-    const apelido = apelidoForm || nome;
+    if (!nome || !email || !senhaForm || !confirmarSenhaForm) {
+      throw new Error("Preencha todos os campos obrigatórios.");
+    }
 
-    const cidadeFinal = cidade.trim();
-    const estadoFinal = estado.trim();
-    const bairroFinal = bairro.trim();
-    const cepFinal = cep.replace(/\D/g, "");
+    if (senhaForm.length < 6) {
+      throw new Error("A senha precisa ter pelo menos 6 caracteres.");
+    }
 
-    const aceitaOfertas =
-      formData.get("aceita_ofertas_whatsapp") === "on";
+    if (senhaForm !== confirmarSenhaForm) {
+      throw new Error("As senhas não conferem.");
+    }
 
-    if (!nome || !email || !whatsapp || !senha || !cidadeFinal) {
-      setMensagem(
-        "Preencha pelo menos Nome, WhatsApp, E-mail, Senha e Cidade."
+    // 1) Cadastra no Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: senhaForm,
+      options: {
+        data: {
+          nome,
+          // aqui você pode mandar mais metadados, tipo tipo_usuario: "cliente" etc
+        },
+      },
+    });
+
+    if (signUpError) {
+      throw signUpError;
+    }
+
+    const user = signUpData.user;
+    if (!user) {
+      throw new Error("Não foi possível criar o usuário. Tente novamente.");
+    }
+
+    // 2) Insere na tabela específica (AJUSTE AQUI: clientes / empresas)
+    const { error: insertError } = await supabase.from("clientes").insert({
+      id: user.id, // FK para auth.users
+      nome,
+      email,
+      // coloque aqui os outros campos do form (cidade, estado, bairro, cep etc)
+      cep: String(formData.get("cep") || ""),
+      cidade: String(formData.get("cidade") || ""),
+      estado: String(formData.get("estado") || ""),
+      bairro: String(formData.get("bairro") || ""),
+      created_at: new Date().toISOString(),
+    });
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    // deu tudo certo
+    router.push("/cadastro/sucesso");
+  } catch (err: any) {
+    console.error("ERRO AO CRIAR CONTA:", err);
+
+    const msg = String(err?.message || "").toLowerCase();
+
+    if (msg.includes("already registered") || msg.includes("duplicate key")) {
+      setErro("Esse e-mail já está cadastrado. Tente fazer login.");
+    } else if (msg.includes("password")) {
+      setErro("Senha inválida. Use pelo menos 6 caracteres.");
+    } else if (msg.includes("row-level security") || msg.includes("permission")) {
+      setErro(
+        "Erro de permissão ao salvar seus dados. Verifique as políticas RLS da tabela no Supabase."
       );
-      setLoading(false);
-      return;
+    } else {
+      setErro(
+        err?.message ||
+          "Erro ao criar sua conta. Tente novamente em instantes."
+      );
     }
-
-    try {
-      // 1) Salva no Supabase (ajustar clienteService para aceitar 'cep')
-      await cadastrarCliente({
-        nome,
-        apelido,
-        whatsapp,
-        email,
-        senha,
-        cidade: cidadeFinal,
-        estado: estadoFinal,
-        bairro: bairroFinal,
-        cep: cepFinal || null,
-        aceitaOfertasWhatsapp: aceitaOfertas,
-      });
-
-      // 2) Mantém local no localStorage para o painel
-      const demoCliente = {
-        nome,
-        apelido,
-        email,
-        whatsapp,
-        cidade: cidadeFinal,
-        estado: estadoFinal,
-        bairro: bairroFinal,
-        cep: cepFinal || null,
-        aceitaOfertas,
-        localizacao: `${cidadeFinal}${estadoFinal ? " - " + estadoFinal : ""}`,
-        criadoEm: new Date().toISOString(),
-      };
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          "construtheo_demo_cliente",
-          JSON.stringify(demoCliente)
-        );
-      }
-
-      setMensagem("Conta criada com sucesso! 🎉");
-
-      form.reset();
-      setCep("");
-      setCidade("");
-      setEstado("");
-      setBairro("");
-
-      router.push("/painel/cliente");
-    } catch (error) {
-      console.error("Erro ao cadastrar cliente:", error);
-      setMensagem("Erro ao criar sua conta. Tente novamente em instantes.");
-    } finally {
-      setLoading(false);
-    }
+  } finally {
+    setLoading(false);
   }
-
+}
   return (
     <div
       style={{
