@@ -21,7 +21,7 @@ type ClienteResumo = {
 type Empresa = {
   id: string;
   nome: string;
-  tipo?: string | null; // ex: "Depósito de materiais"
+  tipo?: string | null;
   cidade?: string | null;
   estado?: string | null;
   bairro?: string | null;
@@ -31,7 +31,7 @@ type Profissional = {
   id: string;
   nome: string;
   apelido?: string | null;
-  funcao?: string | null; // pedreiro, eletricista...
+  funcao?: string | null;
   cidade?: string | null;
   estado?: string | null;
   bairro?: string | null;
@@ -92,9 +92,7 @@ export default function PainelClientePage() {
 
       const { data, error } = await supabase
         .from("empresas")
-        .select(
-          "id, nome, tipo, cidade, estado, bairro"
-        )
+        .select("id, nome, tipo, cidade, estado, bairro")
         .eq("cidade", cliente.cidade)
         .eq("estado", cliente.estado)
         .order("nome", { ascending: true });
@@ -115,9 +113,7 @@ export default function PainelClientePage() {
 
       const { data, error } = await supabase
         .from("profissionais")
-        .select(
-          "id, nome, apelido, funcao, cidade, estado, bairro"
-        )
+        .select("id, nome, apelido, funcao, cidade, estado, bairro")
         .eq("cidade", cliente.cidade)
         .eq("estado", cliente.estado)
         .order("nome", { ascending: true });
@@ -144,14 +140,17 @@ export default function PainelClientePage() {
       style={{
         minHeight: "100vh",
         background: "#F5F5F7",
-        padding: "24px 16px 40px",
         boxSizing: "border-box",
+        overflowX: "hidden", // evita scroll horizontal/zoom estranho
       }}
     >
       <div
         style={{
+          width: "100%",
           maxWidth: 480,
           margin: "0 auto",
+          padding: "24px 16px 40px", // padding vem pro container, não pro body inteiro
+          boxSizing: "border-box",
         }}
       >
         {/* TOPO */}
@@ -380,7 +379,6 @@ export default function PainelClientePage() {
                     flexShrink: 0,
                   }}
                 >
-                  {/* thumb */}
                   <div
                     style={{
                       background: "#E5E7EB",
@@ -565,6 +563,7 @@ export default function PainelClientePage() {
               gap: 10,
             }}
           >
+            {/* UMA EMPRESA -> formulário de cadastro de empresa/deposito */}
             <Link
               href="/cadastro/deposito"
               style={{
@@ -583,6 +582,7 @@ export default function PainelClientePage() {
               Uma Empresa
             </Link>
 
+            {/* UM PROFISSIONAL -> formulário de cadastro de prestador */}
             <Link
               href="/cadastro/prestador"
               style={{
