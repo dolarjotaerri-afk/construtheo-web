@@ -12,8 +12,11 @@ type CalcItem = {
 export default function PainelCalculosPage() {
   const router = useRouter();
 
-  // estado para o tipo da operação (cliente/profissional)
+  // estado para o tipo da operação (cliente/profissional) vindo da URL (fallback)
   const [tipo, setTipo] = useState<string | null>(null);
+
+  // controle de autorização
+  const [verificandoAcesso, setVerificandoAcesso] = useState(true);
 
   // lê ?tipo= da URL no browser
   useEffect(() => {
@@ -24,6 +27,23 @@ export default function PainelCalculosPage() {
 
     if (tipoParam) setTipo(tipoParam);
   }, []);
+
+  // ---------- GUARD DE ACESSO ----------
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const profStr = localStorage.getItem("construtheo_profissional_atual");
+    const clienteStr = localStorage.getItem("construtheo_cliente_atual");
+
+    // só entra se tiver cliente OU profissional
+    if (!profStr && !clienteStr) {
+      // ninguém logado -> manda pra login
+      router.replace("/login");
+      return;
+    }
+
+    setVerificandoAcesso(false);
+  }, [router]);
 
   // lista de cálculos básicos (gratuitos)
   const calculosGratis: CalcItem[] = [
@@ -78,7 +98,6 @@ export default function PainelCalculosPage() {
 
     const profStr = localStorage.getItem("construtheo_profissional_atual");
     const clienteStr = localStorage.getItem("construtheo_cliente_atual");
-    const empresaStr = localStorage.getItem("construtheo_empresa_atual");
 
     // PROFISSIONAL
     if (profStr) {
@@ -105,13 +124,7 @@ export default function PainelCalculosPage() {
       return;
     }
 
-    // EMPRESA
-    if (empresaStr) {
-      router.push("/painel/empresa");
-      return;
-    }
-
-    // Fallback usando ?tipo=
+    // Fallback usando ?tipo= (se por algum motivo o localStorage não estiver presente)
     if (tipo === "profissional") {
       router.push("/painel/profissional");
     } else if (tipo === "cliente") {
@@ -120,6 +133,11 @@ export default function PainelCalculosPage() {
       router.push("/login");
     }
   };
+
+  // enquanto verifica acesso, não renderiza o conteúdo (evita flicker)
+  if (verificandoAcesso) {
+    return null;
+  }
 
   return (
     <main
@@ -221,7 +239,7 @@ export default function PainelCalculosPage() {
                     style={{
                       padding: "14px",
                       borderRadius: "16px",
-                      border: "1px solid #E5E7EB", // <-- corrigido aqui
+                      border: "1px solid #E5E7EB",
                       background: "#F8FAFC",
                       textDecoration: "none",
                       fontSize: "0.9rem",
