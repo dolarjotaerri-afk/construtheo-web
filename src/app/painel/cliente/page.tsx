@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
 
 type ClienteResumo = {
   id: string;
@@ -23,17 +24,63 @@ export default function PainelClientePage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      const salvo = localStorage.getItem("construtheo_cliente_atual");
-      if (salvo) {
-        const parsed: ClienteResumo = JSON.parse(salvo);
-        setCliente(parsed);
+    async function carregarCliente() {
+      try {
+        // 1) Tenta pegar do localStorage (mais rápido)
+        const salvo = localStorage.getItem("construtheo_cliente_atual");
+        if (salvo) {
+          const parsed: ClienteResumo = JSON.parse(salvo);
+          setCliente(parsed);
+          setCarregando(false);
+          return;
+        }
+
+        // 2) Se não tiver no localStorage, tenta reconstruir via Supabase
+        const { data: userData, error: userError } =
+          await supabase.auth.getUser();
+
+        if (userError) {
+          console.error("Erro ao buscar usuário logado:", userError);
+        }
+
+        const user = userData?.user;
+        if (!user) {
+          // não está logado no Supabase
+          setCarregando(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("clientes")
+          .select(
+            "id, nome, apelido, email, whatsapp, cep, cidade, estado, bairro, aceita_ofertas_whatsapp"
+          )
+          .eq("auth_id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Erro ao buscar cliente no banco:", error);
+          setCarregando(false);
+          return;
+        }
+
+        if (data) {
+          const resumo: ClienteResumo = data;
+          // salva de novo no localStorage pra próximas vezes
+          localStorage.setItem(
+            "construtheo_cliente_atual",
+            JSON.stringify(resumo)
+          );
+          setCliente(resumo);
+        }
+      } catch (err) {
+        console.error("Erro geral ao carregar cliente:", err);
+      } finally {
+        setCarregando(false);
       }
-    } catch (err) {
-      console.error("Erro ao ler cliente do localStorage:", err);
-    } finally {
-      setCarregando(false);
     }
+
+    carregarCliente();
   }, []);
 
   function formatarCep(cep?: string) {
@@ -102,6 +149,14 @@ export default function PainelClientePage() {
               color: "#2563EB",
               textDecoration: "underline",
             }}
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("construtheo_cliente_atual");
+              }
+              supabase.auth.signOut().catch((e) =>
+                console.error("Erro ao sair:", e)
+              );
+            }}
           >
             Sair
           </Link>
@@ -146,7 +201,7 @@ export default function PainelClientePage() {
                 color: "#B91C1C",
               }}
             >
-              Não encontramos seus dados locais. Faça login novamente.
+              Não encontramos seus dados. Faça login novamente.
             </p>
           )}
 
