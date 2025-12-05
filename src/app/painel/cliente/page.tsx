@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../../../supabaseClient";
 
 type ClienteResumo = {
   id: string;
@@ -22,315 +22,145 @@ export default function PainelClientePage() {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    async function carregarCliente() {
+    async function carregar() {
       try {
-        // 1) Tenta pegar do localStorage (mais rápido)
+        // tenta localStorage
         const salvo = localStorage.getItem("construtheo_cliente_atual");
         if (salvo) {
-          const parsed: ClienteResumo = JSON.parse(salvo);
-          setCliente(parsed);
+          setCliente(JSON.parse(salvo));
           setCarregando(false);
           return;
         }
 
-        // 2) Se não tiver no localStorage, tenta reconstruir via Supabase
-        const { data: userData, error: userError } =
-          await supabase.auth.getUser();
-
-        if (userError) {
-          console.error("Erro ao buscar usuário logado:", userError);
-        }
-
+        // tenta auth supabase
+        const { data: userData } = await supabase.auth.getUser();
         const user = userData?.user;
-        if (!user) {
-          // não está logado no Supabase
-          setCarregando(false);
-          return;
-        }
 
-        const { data, error } = await supabase
-          .from("clientes")
-          .select(
-            "id, nome, apelido, email, whatsapp, cep, cidade, estado, bairro, aceita_ofertas_whatsapp"
-          )
-          .eq("auth_id", user.id)
-          .maybeSingle();
+        if (user) {
+          const { data } = await supabase
+            .from("clientes")
+            .select("*")
+            .eq("id", user.id)
+            .maybeSingle();
 
-        if (error) {
-          console.error("Erro ao buscar cliente no banco:", error);
-          setCarregando(false);
-          return;
-        }
-
-        if (data) {
-          const resumo: ClienteResumo = data;
-          // salva de novo no localStorage pra próximas vezes
-          localStorage.setItem(
-            "construtheo_cliente_atual",
-            JSON.stringify(resumo)
-          );
-          setCliente(resumo);
+          if (data) {
+            localStorage.setItem("construtheo_cliente_atual", JSON.stringify(data));
+            setCliente(data);
+          }
         }
       } catch (err) {
-        console.error("Erro geral ao carregar cliente:", err);
+        console.error(err);
       } finally {
         setCarregando(false);
       }
     }
 
-    carregarCliente();
+    carregar();
   }, []);
 
   function formatarCep(cep?: string) {
     if (!cep) return "";
-    const somenteDigitos = cep.replace(/\D/g, "");
-    if (somenteDigitos.length !== 8) return somenteDigitos;
-    return somenteDigitos.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+    const d = cep.replace(/\D/g, "");
+    if (d.length !== 8) return d;
+    return d.replace(/^(\d{5})(\d{3})$/, "$1-$2");
   }
 
-  const cepFormatado = formatarCep(cliente?.cep);
-
   const nomeExibicao =
-    cliente?.apelido && cliente.apelido.trim().length > 0
+    cliente?.apelido && cliente.apelido.trim() !== ""
       ? cliente.apelido
       : cliente?.nome || "cliente";
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#F9FAFB",
-        padding: "16px 16px 32px",
-        boxSizing: "border-box",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 480,
-          margin: "0 auto",
-        }}
-      >
-        {/* TOPO */}
-        <header
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 24,
-          }}
-        >
+    <main style={{ minHeight: "100vh", background: "#F9FAFB", padding: 16 }}>
+      <div style={{ maxWidth: 480, margin: "0 auto" }}>
+        <header style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <p
-              style={{
-                fontSize: "0.75rem",
-                color: "#6B7280",
-                marginBottom: 4,
-              }}
-            >
-              Bem-vindo(a)
-            </p>
-            <h1
-              style={{
-                fontSize: "1.4rem",
-                fontWeight: 700,
-                color: "#0F172A",
-              }}
-            >
-              {nomeExibicao}
-            </h1>
+            <p style={{ fontSize: 12, color: "#6B7280" }}>Bem-vindo(a)</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700 }}>{nomeExibicao}</h1>
           </div>
 
           <Link
             href="/login"
-            style={{
-              fontSize: "0.75rem",
-              color: "#2563EB",
-              textDecoration: "underline",
-            }}
             onClick={() => {
-              if (typeof window !== "undefined") {
-                localStorage.removeItem("construtheo_cliente_atual");
-              }
-              supabase.auth.signOut().catch((e) =>
-                console.error("Erro ao sair:", e)
-              );
+              localStorage.removeItem("construtheo_cliente_atual");
+              supabase.auth.signOut();
             }}
+            style={{ fontSize: 12, textDecoration: "underline", color: "#2563EB" }}
           >
             Sair
           </Link>
         </header>
 
-        {/* CARTÃO DADOS PESSOAIS */}
         <section
           style={{
-            background: "#FFFFFF",
-            borderRadius: 16,
+            background: "#fff",
             padding: 16,
-            boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
+            borderRadius: 16,
             marginBottom: 16,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
         >
-          <h2
-            style={{
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              color: "#0F172A",
-              marginBottom: 8,
-            }}
-          >
-            Seus dados
-          </h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Seus dados</h2>
 
-          {carregando && (
-            <p
-              style={{
-                fontSize: "0.85rem",
-                color: "#6B7280",
-              }}
-            >
-              Carregando informações...
-            </p>
-          )}
+          {carregando && <p>Carregando...</p>}
 
           {!carregando && !cliente && (
-            <p
-              style={{
-                fontSize: "0.85rem",
-                color: "#B91C1C",
-              }}
-            >
+            <p style={{ color: "red" }}>
               Não encontramos seus dados. Faça login novamente.
             </p>
           )}
 
           {cliente && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                fontSize: "0.85rem",
-                color: "#111827",
-              }}
-            >
-              <div>
-                <span style={{ fontWeight: 500 }}>Nome: </span>
-                <span>{cliente.nome}</span>
-              </div>
-
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <p><strong>Nome:</strong> {cliente.nome}</p>
               {cliente.apelido && (
-                <div>
-                  <span style={{ fontWeight: 500 }}>
-                    Como gosta de ser chamado:{" "}
-                  </span>
-                  <span>{cliente.apelido}</span>
-                </div>
+                <p>
+                  <strong>Como gosta de ser chamado:</strong> {cliente.apelido}
+                </p>
               )}
-
-              <div>
-                <span style={{ fontWeight: 500 }}>E-mail: </span>
-                <span>{cliente.email}</span>
-              </div>
-
+              <p><strong>Email:</strong> {cliente.email}</p>
               {cliente.whatsapp && (
-                <div>
-                  <span style={{ fontWeight: 500 }}>WhatsApp: </span>
-                  <span>{cliente.whatsapp}</span>
-                </div>
+                <p><strong>WhatsApp:</strong> {cliente.whatsapp}</p>
               )}
             </div>
           )}
         </section>
 
-        {/* CARTÃO LOCALIZAÇÃO */}
         {cliente && (
           <section
             style={{
-              background: "#FFFFFF",
-              borderRadius: 16,
+              background: "#fff",
               padding: 16,
-              boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
+              borderRadius: 16,
               marginBottom: 16,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }}
           >
-            <h2
-              style={{
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                color: "#0F172A",
-                marginBottom: 8,
-              }}
-            >
-              Localização principal
+            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
+              Localização
             </h2>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 4,
-                fontSize: "0.85rem",
-                color: "#111827",
-              }}
-            >
-              <div>
-                <span style={{ fontWeight: 500 }}>Cidade: </span>
-                <span>{cliente.cidade || "Não informado"}</span>
-              </div>
-              <div>
-                <span style={{ fontWeight: 500 }}>Estado: </span>
-                <span>{cliente.estado || "Não informado"}</span>
-              </div>
-              <div>
-                <span style={{ fontWeight: 500 }}>Bairro: </span>
-                <span>{cliente.bairro || "Não informado"}</span>
-              </div>
-              <div>
-                <span style={{ fontWeight: 500 }}>CEP: </span>
-                <span>{cepFormatado || "Não informado"}</span>
-              </div>
-            </div>
+            <p><strong>Cidade:</strong> {cliente.cidade}</p>
+            <p><strong>Estado:</strong> {cliente.estado}</p>
+            <p><strong>Bairro:</strong> {cliente.bairro}</p>
+            <p><strong>CEP:</strong> {formatarCep(cliente.cep)}</p>
           </section>
         )}
 
-        {/* CTA / PLACEHOLDER FUTURO */}
-        <section
+        <Link
+          href="/"
           style={{
-            marginTop: 12,
+            display: "inline-block",
+            padding: "12px 16px",
+            borderRadius: 999,
+            background: "#0284C7",
+            color: "#fff",
+            fontWeight: 600,
+            textAlign: "center",
           }}
         >
-          <p
-            style={{
-              fontSize: "0.85rem",
-              color: "#6B7280",
-              marginBottom: 8,
-            }}
-          >
-            Em breve você verá aqui suas obras, profissionais favoritos e
-            empresas recomendadas na sua região.
-          </p>
-
-          <Link
-            href="/"
-            style={{
-              display: "inline-flex",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "10px 16px",
-              borderRadius: 999,
-              background: "linear-gradient(to right, #0284C7, #0EA5E9)",
-              color: "#FFFFFF",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              textDecoration: "none",
-              boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
-            }}
-          >
-            Voltar para a tela inicial
-          </Link>
-        </section>
+          Voltar para a tela inicial
+        </Link>
       </div>
     </main>
   );
