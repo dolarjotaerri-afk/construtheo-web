@@ -115,7 +115,7 @@ export default function CadastroClientePage() {
       }
 
       // deu tudo certo
-      router.push("/cadastro/sucesso");
+      router.push("/painel/cliente");
     } catch (err: any) {
       console.error("ERRO AO CRIAR CONTA:", err);
 
