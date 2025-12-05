@@ -155,7 +155,7 @@ export default function CadastroClientePage() {
       }
 
       // 4) Redireciona para o painel do cliente
-      router.push("/painel/cliente");
+      router.push("/app/painel/cliente");
     } catch (err: any) {
       console.error("ERRO AO CRIAR CONTA:", err);
 
