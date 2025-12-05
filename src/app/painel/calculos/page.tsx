@@ -12,7 +12,7 @@ type CalcItem = {
 export default function PainelCalculosPage() {
   const router = useRouter();
 
-  // estado para o tipo da operação (cliente/profissional) vindo da URL (fallback)
+  // estado para o tipo da operação (cliente/profissional) vindo da URL
   const [tipo, setTipo] = useState<string | null>(null);
 
   // controle de autorização
@@ -63,7 +63,7 @@ export default function PainelCalculosPage() {
     paginas.push(calculosGratis.slice(i, i + 4));
   }
 
-  // carrosel PRO
+  // carrossel PRO
   const calculosProCarrossel = [
     "Calcular Ferro / Aço",
     "Calcular Formas",
@@ -89,7 +89,7 @@ export default function PainelCalculosPage() {
     return () => clearInterval(id);
   }, []);
 
-  // botão voltar -> detecta painel certo pelo localStorage
+  // botão voltar -> prioridade: tipo da URL, depois localStorage
   const handleVoltar = () => {
     if (typeof window === "undefined") {
       router.push("/login");
@@ -99,7 +99,45 @@ export default function PainelCalculosPage() {
     const profStr = localStorage.getItem("construtheo_profissional_atual");
     const clienteStr = localStorage.getItem("construtheo_cliente_atual");
 
-    // PROFISSIONAL
+    // 1) PRIORIDADE: tipo vindo da URL (quem abriu a calculadora)
+
+    // CLIENTE USANDO
+    if (tipo === "cliente") {
+      router.push("/painel/cliente");
+      return;
+    }
+
+    // PROFISSIONAL USANDO
+    if (tipo === "profissional") {
+      if (profStr) {
+        try {
+          const prof = JSON.parse(profStr);
+          const id = prof?.id;
+          const apelido = encodeURIComponent(prof?.apelido || "profissional");
+
+          if (id) {
+            router.push(`/painel/profissional?id=${id}&apelido=${apelido}`);
+          } else {
+            router.push("/painel/profissional");
+          }
+        } catch {
+          router.push("/painel/profissional");
+        }
+      } else {
+        router.push("/painel/profissional");
+      }
+      return;
+    }
+
+    // 2) Fallback: se não veio tipo na URL, decide pelo localStorage
+
+    // se tem cliente salvo, manda pra painel do cliente
+    if (clienteStr) {
+      router.push("/painel/cliente");
+      return;
+    }
+
+    // se tem profissional salvo, manda pra painel do profissional
     if (profStr) {
       try {
         const prof = JSON.parse(profStr);
@@ -111,27 +149,14 @@ export default function PainelCalculosPage() {
         } else {
           router.push("/painel/profissional");
         }
-        return;
       } catch {
         router.push("/painel/profissional");
-        return;
       }
-    }
-
-    // CLIENTE
-    if (clienteStr) {
-      router.push("/painel/cliente");
       return;
     }
 
-    // Fallback usando ?tipo= (se por algum motivo o localStorage não estiver presente)
-    if (tipo === "profissional") {
-      router.push("/painel/profissional");
-    } else if (tipo === "cliente") {
-      router.push("/painel/cliente");
-    } else {
-      router.push("/login");
-    }
+    // 3) Último caso: ninguém logado
+    router.push("/login");
   };
 
   // enquanto verifica acesso, não renderiza o conteúdo (evita flicker)
