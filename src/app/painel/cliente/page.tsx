@@ -166,7 +166,9 @@ export default function PainelClientePage() {
               </div>
               {cliente.apelido && (
                 <div>
-                  <span style={{ fontWeight: 500 }}>Como gosta de ser chamado: </span>
+                  <span style={{ fontWeight: 500 }}>
+                    Como gosta de ser chamado:{" "}
+                  </span>
                   <span>{cliente.apelido}</span>
                 </div>
               )}
@@ -235,7 +237,158 @@ export default function PainelClientePage() {
           </section>
         )}
 
-        {/* CTA simples */}
+        {/* cartão CALCULADORAS / FERRAMENTAS */}
+        <section
+          style={{
+            background: "#FFFFFF",
+            borderRadius: 16,
+            padding: 16,
+            boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
+            marginBottom: 16,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#0F172A",
+              marginBottom: 8,
+            }}
+          >
+            Calculadoras da sua obra
+          </h2>
+          <p
+            style={{
+              fontSize: "0.85rem",
+              color: "#6B7280",
+              marginBottom: 12,
+            }}
+          >
+            Faça cálculos de concreto, blocos, aço, drywall e organize tudo que
+            sua obra precisa em poucos cliques.
+          </p>
+          <Link
+            href="/calculadoras"
+            style={{
+              display: "inline-flex",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "8px 14px",
+              borderRadius: 999,
+              background:
+                "linear-gradient(to right, #0284C7, #0EA5E9)",
+              color: "#FFFFFF",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            Acessar calculadoras
+          </Link>
+        </section>
+
+        {/* cartão MELHORES PROFISSIONAIS */}
+        <section
+          style={{
+            background: "#FFFFFF",
+            borderRadius: 16,
+            padding: 16,
+            boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
+            marginBottom: 16,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#0F172A",
+              marginBottom: 8,
+            }}
+          >
+            Melhores profissionais na sua região
+          </h2>
+          <p
+            style={{
+              fontSize: "0.85rem",
+              color: "#6B7280",
+              marginBottom: 12,
+            }}
+          >
+            Assim que os profissionais da sua região começarem a se cadastrar e
+            receber avaliações, os melhores aparecerão aqui primeiro para você.
+          </p>
+          <Link
+            href="/profissionais"
+            style={{
+              display: "inline-flex",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid #E5E7EB",
+              background: "#F9FAFB",
+              color: "#111827",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              textDecoration: "none",
+            }}
+          >
+            Buscar profissionais
+          </Link>
+        </section>
+
+        {/* cartão MELHORES EMPRESAS */}
+        <section
+          style={{
+            background: "#FFFFFF",
+            borderRadius: 16,
+            padding: 16,
+            boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
+            marginBottom: 16,
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "#0F172A",
+              marginBottom: 8,
+            }}
+          >
+            Melhores empresas para sua obra
+          </h2>
+          <p
+            style={{
+              fontSize: "0.85rem",
+              color: "#6B7280",
+              marginBottom: 12,
+            }}
+          >
+            Depósitos, usinas de concreto, locadoras de equipamentos e muito
+            mais. Em breve você verá aqui as empresas mais bem avaliadas perto
+            de você.
+          </p>
+          <Link
+            href="/empresas"
+            style={{
+              display: "inline-flex",
+              justifyContent: "center",
+              alignItems: "center",
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid #E5E7EB",
+              background: "#F9FAFB",
+              color: "#111827",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              textDecoration: "none",
+            }}
+          >
+            Ver empresas cadastradas
+          </Link>
+        </section>
+
+        {/* CTA simples final */}
         <section
           style={{
             marginTop: 12,
@@ -248,7 +401,7 @@ export default function PainelClientePage() {
               marginBottom: 8,
             }}
           >
-            Em breve você verá aqui suas obras, profissionais favoritos e
+            Em breve você verá aqui também suas obras, profissionais favoritos e
             empresas recomendadas na sua região.
           </p>
           <Link
