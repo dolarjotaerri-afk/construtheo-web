@@ -48,7 +48,7 @@ export default function PainelClientePage() {
   const nomeExibicao =
     cliente?.apelido && cliente.apelido.trim().length > 0
       ? cliente.apelido
-      : cliente?.nome || "cliente";
+      : cliente?.nome || "Cliente";
 
   return (
     <main
@@ -65,7 +65,7 @@ export default function PainelClientePage() {
           margin: "0 auto",
         }}
       >
-        {/* TOPO */}
+        {/* topo */}
         <header
           style={{
             display: "flex",
@@ -107,7 +107,7 @@ export default function PainelClientePage() {
           </Link>
         </header>
 
-        {/* CARTÃO DADOS PESSOAIS */}
+        {/* cartão de dados principais */}
         <section
           style={{
             background: "#FFFFFF",
@@ -164,21 +164,16 @@ export default function PainelClientePage() {
                 <span style={{ fontWeight: 500 }}>Nome: </span>
                 <span>{cliente.nome}</span>
               </div>
-
               {cliente.apelido && (
                 <div>
-                  <span style={{ fontWeight: 500 }}>
-                    Como gosta de ser chamado:{" "}
-                  </span>
+                  <span style={{ fontWeight: 500 }}>Como gosta de ser chamado: </span>
                   <span>{cliente.apelido}</span>
                 </div>
               )}
-
               <div>
                 <span style={{ fontWeight: 500 }}>E-mail: </span>
                 <span>{cliente.email}</span>
               </div>
-
               {cliente.whatsapp && (
                 <div>
                   <span style={{ fontWeight: 500 }}>WhatsApp: </span>
@@ -189,7 +184,7 @@ export default function PainelClientePage() {
           )}
         </section>
 
-        {/* CARTÃO LOCALIZAÇÃO */}
+        {/* cartão de localização com CEP */}
         {cliente && (
           <section
             style={{
@@ -208,7 +203,7 @@ export default function PainelClientePage() {
                 marginBottom: 8,
               }}
             >
-              Localização principal
+              Localização da sua obra
             </h2>
 
             <div
@@ -240,7 +235,7 @@ export default function PainelClientePage() {
           </section>
         )}
 
-        {/* CTA / PLACEHOLDER FUTURO */}
+        {/* CTA simples */}
         <section
           style={{
             marginTop: 12,
@@ -256,7 +251,6 @@ export default function PainelClientePage() {
             Em breve você verá aqui suas obras, profissionais favoritos e
             empresas recomendadas na sua região.
           </p>
-
           <Link
             href="/"
             style={{
@@ -265,7 +259,8 @@ export default function PainelClientePage() {
               alignItems: "center",
               padding: "10px 16px",
               borderRadius: 999,
-              background: "linear-gradient(to right, #0284C7, #0EA5E9)",
+              background:
+                "linear-gradient(to right, #0284C7, #0EA5E9)",
               color: "#FFFFFF",
               fontSize: "0.9rem",
               fontWeight: 600,
