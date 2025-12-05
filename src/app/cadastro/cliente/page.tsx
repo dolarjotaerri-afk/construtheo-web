@@ -1,167 +1,271 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { buscarEnderecoPorCep } from "../../../lib/cepService";
 import { supabase } from "../../../lib/supabaseClient";
 
-type ClienteResumo = {
-  id: string;
-  nome: string;
-  apelido?: string | null;
-  email: string;
-  whatsapp?: string;
-  cep?: string;
-  cidade?: string;
-  estado?: string;
-  bairro?: string;
-  aceita_ofertas_whatsapp?: boolean;
-};
+export default function CadastroClientePage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [mensagem, setMensagem] = useState<string | null>(null);
 
-export default function PainelClientePage() {
-  const [cliente, setCliente] = useState<ClienteResumo | null>(null);
-  const [carregando, setCarregando] = useState(true);
+  const [cep, setCep] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estado, setEstado] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [buscandoCep, setBuscandoCep] = useState(false);
 
-  useEffect(() => {
-    async function carregar() {
-      try {
-        // tenta localStorage
-        const salvo = localStorage.getItem("construtheo_cliente_atual");
-        if (salvo) {
-          setCliente(JSON.parse(salvo));
-          setCarregando(false);
-          return;
-        }
+  async function handleCepBlur() {
+    const cepLimpo = cep.replace(/\D/g, "");
+    if (cepLimpo.length !== 8) return;
 
-        // tenta auth supabase
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData?.user;
+    try {
+      setBuscandoCep(true);
+      setMensagem(null);
 
-        if (user) {
-          const { data } = await supabase
-            .from("clientes")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
+      const endereco = await buscarEnderecoPorCep(cepLimpo);
 
-          if (data) {
-            localStorage.setItem("construtheo_cliente_atual", JSON.stringify(data));
-            setCliente(data);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setCarregando(false);
+      setCidade(endereco.cidade || "");
+      setEstado(endereco.estado || "");
+      setBairro(endereco.bairro || "");
+    } catch (err: any) {
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("load failed")) {
+        setMensagem("Falha ao buscar CEP. Verifique sua conexão.");
+      } else {
+        setMensagem("Não foi possível buscar o endereço.");
       }
+    } finally {
+      setBuscandoCep(false);
     }
-
-    carregar();
-  }, []);
-
-  function formatarCep(cep?: string) {
-    if (!cep) return "";
-    const d = cep.replace(/\D/g, "");
-    if (d.length !== 8) return d;
-    return d.replace(/^(\d{5})(\d{3})$/, "$1-$2");
   }
 
-  const nomeExibicao =
-    cliente?.apelido && cliente.apelido.trim() !== ""
-      ? cliente.apelido
-      : cliente?.nome || "cliente";
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setMensagem(null);
+    setLoading(true);
+
+    try {
+      const formData = new FormData(e.currentTarget);
+
+      const nome = String(formData.get("nome") || "").trim();
+      const email = String(formData.get("email") || "").trim().toLowerCase();
+      const senha = String(formData.get("senha") || "");
+      const confirmarSenha = String(formData.get("confirmar_senha") || "");
+
+      if (!nome || !email || !senha || !confirmarSenha) {
+        throw new Error("Preencha todos os campos obrigatórios.");
+      }
+
+      if (senha.length < 6) {
+        throw new Error("A senha precisa ter pelo menos 6 caracteres.");
+      }
+
+      if (senha !== confirmarSenha) {
+        throw new Error("As senhas não conferem.");
+      }
+
+      // CADASTRA NO SUPABASE AUTH
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: senha,
+        options: {
+          data: { nome, tipo_usuario: "cliente" },
+        },
+      });
+
+      if (error) throw error;
+
+      const user = data.user;
+      if (!user) throw new Error("Erro inesperado ao criar sua conta.");
+
+      // CAMPOS EXTRAS
+      const apelido = String(formData.get("apelido") || "").trim() || null;
+      const whatsapp = String(formData.get("whatsapp") || "").trim() || null;
+
+      const aceita =
+        formData.get("aceita_ofertas_whatsapp") === "on";
+
+      // INSERE NA TABELA CLIENTES
+      const { error: insertError } = await supabase.from("clientes").insert({
+        id: user.id,
+        nome,
+        email,
+        apelido,
+        whatsapp,
+        cep,
+        cidade,
+        estado,
+        bairro,
+        aceita_ofertas_whatsapp: aceita,
+        created_at: new Date().toISOString(),
+      });
+
+      if (insertError) throw insertError;
+
+      // SALVA LOCALMENTE
+      localStorage.setItem(
+        "construtheo_cliente_atual",
+        JSON.stringify({
+          id: user.id,
+          nome,
+          email,
+          apelido,
+          whatsapp,
+          cep,
+          cidade,
+          estado,
+          bairro,
+          aceita_ofertas_whatsapp: aceita,
+        })
+      );
+
+      router.push("/painel/cliente");
+    } catch (err: any) {
+      console.error("ERRO AO CRIAR CLIENTE:", err);
+
+      const msg = String(err?.message || "").toLowerCase();
+
+      if (msg.includes("load failed")) {
+        setMensagem("Não foi possível conectar ao servidor. Tente novamente.");
+      } else if (msg.includes("duplicate") || msg.includes("already")) {
+        setMensagem("Esse e-mail já está cadastrado.");
+      } else {
+        setMensagem(err.message || "Erro ao criar sua conta.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <main style={{ minHeight: "100vh", background: "#F9FAFB", padding: 16 }}>
-      <div style={{ maxWidth: 480, margin: "0 auto" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
-          <div>
-            <p style={{ fontSize: 12, color: "#6B7280" }}>Bem-vindo(a)</p>
-            <h1 style={{ fontSize: 22, fontWeight: 700 }}>{nomeExibicao}</h1>
-          </div>
-
-          <Link
-            href="/login"
-            onClick={() => {
-              localStorage.removeItem("construtheo_cliente_atual");
-              supabase.auth.signOut();
-            }}
-            style={{ fontSize: 12, textDecoration: "underline", color: "#2563EB" }}
-          >
-            Sair
-          </Link>
-        </header>
-
-        <section
+    <div
+      style={{
+        maxWidth: 440,
+        margin: "0 auto",
+        padding: "22px 12px 36px",
+      }}
+    >
+      <div style={{ textAlign: "center", marginBottom: 22 }}>
+        <Link
+          href="/login"
           style={{
-            background: "#fff",
-            padding: 16,
-            borderRadius: 16,
-            marginBottom: 16,
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+            fontSize: "0.85rem",
+            color: "#2563EB",
+            textDecoration: "underline",
           }}
         >
-          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Seus dados</h2>
+          ← Voltar
+        </Link>
+      </div>
 
-          {carregando && <p>Carregando...</p>}
+      <h1
+        style={{
+          textAlign: "center",
+          fontSize: "1.6rem",
+          marginBottom: 8,
+          fontWeight: 700,
+        }}
+      >
+        Criar conta de Cliente
+      </h1>
 
-          {!carregando && !cliente && (
-            <p style={{ color: "red" }}>
-              Não encontramos seus dados. Faça login novamente.
-            </p>
-          )}
+      <p
+        style={{
+          textAlign: "center",
+          marginBottom: 24,
+          color: "#555",
+        }}
+      >
+        Preencha seus dados para continuar.
+      </p>
 
-          {cliente && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <p><strong>Nome:</strong> {cliente.nome}</p>
-              {cliente.apelido && (
-                <p>
-                  <strong>Como gosta de ser chamado:</strong> {cliente.apelido}
-                </p>
-              )}
-              <p><strong>Email:</strong> {cliente.email}</p>
-              {cliente.whatsapp && (
-                <p><strong>WhatsApp:</strong> {cliente.whatsapp}</p>
-              )}
-            </div>
-          )}
-        </section>
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: 14 }}
+      >
+        <input name="nome" placeholder="Nome completo" />
 
-        {cliente && (
-          <section
-            style={{
-              background: "#fff",
-              padding: 16,
-              borderRadius: 16,
-              marginBottom: 16,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-              Localização
-            </h2>
+        <input name="apelido" placeholder="Como gosta de ser chamado" />
 
-            <p><strong>Cidade:</strong> {cliente.cidade}</p>
-            <p><strong>Estado:</strong> {cliente.estado}</p>
-            <p><strong>Bairro:</strong> {cliente.bairro}</p>
-            <p><strong>CEP:</strong> {formatarCep(cliente.cep)}</p>
-          </section>
-        )}
+        <input name="email" type="email" placeholder="E-mail" />
 
-        <Link
-          href="/"
+        <input name="whatsapp" placeholder="WhatsApp" />
+
+        <input
+          name="senha"
+          type="password"
+          placeholder="Senha (mínimo 6 caracteres)"
+        />
+
+        <input
+          name="confirmar_senha"
+          type="password"
+          placeholder="Confirmar senha"
+        />
+
+        <input
+          name="cep"
+          placeholder="CEP"
+          value={cep}
+          onChange={(e) => setCep(e.target.value.replace(/\D/g, ""))}
+          onBlur={handleCepBlur}
+        />
+
+        <input
+          name="cidade"
+          placeholder="Cidade"
+          value={cidade}
+          onChange={(e) => setCidade(e.target.value)}
+        />
+
+        <input
+          name="estado"
+          placeholder="Estado"
+          value={estado}
+          onChange={(e) => setEstado(e.target.value)}
+        />
+
+        <input
+          name="bairro"
+          placeholder="Bairro"
+          value={bairro}
+          onChange={(e) => setBairro(e.target.value)}
+        />
+
+        <label style={{ fontSize: 14 }}>
+          <input
+            type="checkbox"
+            name="aceita_ofertas_whatsapp"
+            defaultChecked
+            style={{ marginRight: 6 }}
+          />
+          Quero receber promoções pelo WhatsApp
+        </label>
+
+        <button
+          disabled={loading}
           style={{
-            display: "inline-block",
-            padding: "12px 16px",
+            padding: "12px 0",
             borderRadius: 999,
             background: "#0284C7",
             color: "#fff",
-            fontWeight: 600,
-            textAlign: "center",
+            fontSize: "1rem",
+            fontWeight: 700,
+            opacity: loading ? 0.6 : 1,
           }}
         >
-          Voltar para a tela inicial
-        </Link>
-      </div>
-    </main>
+          {loading ? "Criando conta..." : "Criar minha conta"}
+        </button>
+
+        {mensagem && (
+          <p style={{ textAlign: "center", color: "red", marginTop: 8 }}>
+            {mensagem}
+          </p>
+        )}
+      </form>
+    </div>
   );
 }
