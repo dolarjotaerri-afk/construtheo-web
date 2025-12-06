@@ -142,6 +142,9 @@ export default function PainelClientePage() {
         background: "#F5F5F7",
         boxSizing: "border-box",
         overflowX: "hidden", // evita scroll horizontal/zoom estranho
+        width: "100%",
+        maxWidth: "100%",
+        position: "relative",
       }}
     >
       <div
@@ -222,6 +225,8 @@ export default function PainelClientePage() {
             padding: 18,
             boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
             marginBottom: 20,
+            maxWidth: "100%",
+            boxSizing: "border-box",
           }}
         >
           {carregandoCliente && (
@@ -299,6 +304,8 @@ export default function PainelClientePage() {
               padding: 18,
               boxShadow: "0 10px 30px rgba(37,99,235,0.35)",
               color: "#FFFFFF",
+              maxWidth: "100%",
+              boxSizing: "border-box",
             }}
           >
             <h2
