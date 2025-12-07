@@ -91,7 +91,6 @@ const areasConfig: Record<
     label: "Outras áreas da construção",
     funcoes: ["Profissional da construção", "Outros"],
   },
-  // se vier ?area=outros, cai aqui também
   outros: {
     label: "Outras áreas da construção",
     funcoes: ["Profissional da construção", "Outros"],
@@ -117,7 +116,7 @@ async function obterCoordenadasAtual(): Promise<{
       },
       (err) => {
         console.error("Erro ao obter localização do profissional:", err);
-        resolve(null); // não trava o cadastro
+        resolve(null);
       },
       {
         enableHighAccuracy: true,
@@ -141,10 +140,9 @@ export default function CadastroProfissionalPage() {
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
 
-  // estado para a área vinda da URL (?area=...)
+  // área vinda da URL (?area=...)
   const [areaSlug, setAreaSlug] = useState<keyof typeof areasConfig>("geral");
 
-  // lê ?area=... da URL só no browser
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -174,7 +172,7 @@ export default function CadastroProfissionalPage() {
 
       const documentoRaw =
         ((formData.get("documento") as string) || "").trim();
-      const cpf = documentoRaw.replace(/\D/g, ""); // só números
+      const cpf = documentoRaw.replace(/\D/g, "");
 
       const emailRaw = (formData.get("email") as string) || "";
       const email = emailRaw.trim().toLowerCase();
@@ -226,7 +224,7 @@ export default function CadastroProfissionalPage() {
         return;
       }
 
-      // 🔍 1) Verificar se o e-mail já existe em qualquer tabela de usuário
+      // 1) Verificar se o e-mail já existe (clientes, profissionais, empresas)
       const tabelasUsuarios = ["clientes", "profissionais", "empresas"] as const;
 
       const resultadosEmail = await Promise.all(
@@ -240,7 +238,10 @@ export default function CadastroProfissionalPage() {
 
       const emailJaExiste = resultadosEmail.some(({ count, error }) => {
         if (error) {
-          console.error(`Erro ao verificar e-mail (${email}) em uma tabela:`, error.message);
+          console.error(
+            `Erro ao verificar e-mail (${email}) em uma tabela:`,
+            error.message
+          );
           return false;
         }
         return (count ?? 0) > 0;
@@ -254,7 +255,7 @@ export default function CadastroProfissionalPage() {
         return;
       }
 
-      // 🔍 2) Verificar se o CPF já existe para profissionais (se informado)
+      // 2) Verificar se o CPF já existe para profissionais (se informado)
       if (cpf) {
         const { count: countCpf, error: erroCpf } = await supabase
           .from("profissionais")
@@ -262,7 +263,10 @@ export default function CadastroProfissionalPage() {
           .eq("cpf", cpf);
 
         if (erroCpf) {
-          console.error("Erro ao verificar CPF do profissional:", erroCpf.message);
+          console.error(
+            "Erro ao verificar CPF do profissional:",
+            erroCpf.message
+          );
         }
 
         if ((countCpf ?? 0) > 0) {
@@ -272,7 +276,7 @@ export default function CadastroProfissionalPage() {
         }
       }
 
-      // 📍 3) Tentar obter geolocalização do profissional
+      // 3) Geolocalização (opcional)
       let latitude: number | null = null;
       let longitude: number | null = null;
 
@@ -282,14 +286,14 @@ export default function CadastroProfissionalPage() {
         longitude = coords.longitude;
       }
 
-      // 👉 4) Criar usuário na Auth
+      // 4) Criar usuário na Auth
       const { data: signUpData, error: signUpError } =
         await supabase.auth.signUp({
           email,
           password: senha,
           options: {
             data: {
-              tipo: "profissional",
+              tipo_usuario: "profissional",
               nome,
               apelido,
             },
@@ -310,44 +314,41 @@ export default function CadastroProfissionalPage() {
         return;
       }
 
-      // 👉 5) Inserir na tabela profissionais amarrando com o user.id
-      const { data, error } = await supabase
-        .from("profissionais")
-        .insert([
-          {
-            id: user.id, // ID igual ao da Auth
-            nome,
-            apelido,
-            cpf: cpf || null, // coluna cpf na tabela
-            email,
-            whatsapp,
-            experiencia,
-            localizacao,
-            disponibilidade,
-            area: areaPrincipal, // coluna "area" no banco
-            funcao: funcaoPrincipal, // coluna "funcao" no banco
-            latitude,
-            longitude,
-          },
-        ])
-        .select("id, nome, apelido, area, funcao")
-        .single();
+      // 5) Inserir na tabela profissionais
+      const { error: insertError } = await supabase.from("profissionais").insert({
+        id: user.id,
+        nome,
+        apelido,
+        cpf: cpf || null,
+        email,
+        whatsapp,
+        experiencia,
+        localizacao,
+        disponibilidade,
+        area: areaPrincipal,
+        funcao: funcaoPrincipal || null,
+        latitude,
+        longitude,
+        created_at: new Date().toISOString(),
+      });
 
-      if (error) {
-        console.error("Erro ao salvar profissional:", error.message);
-        setErro("Não foi possível salvar seu cadastro. Tente novamente.");
+      if (insertError) {
+        console.error("Erro ao salvar profissional:", insertError.message);
+        setErro(
+          "Não foi possível salvar seu cadastro. Tente novamente em instantes."
+        );
         setLoading(false);
         return;
       }
 
-      // Guarda um resumo no localStorage
+      // 6) Guarda resumo no localStorage
       if (typeof window !== "undefined") {
         const resumoProfissional = {
-          id: data?.id,
-          nome: data?.nome,
-          apelido: data?.apelido,
-          area: data?.area,
-          funcao: data?.funcao,
+          id: user.id,
+          nome,
+          apelido,
+          area: areaPrincipal,
+          funcao: funcaoPrincipal || null,
           whatsapp,
           localizacao,
           experiencia,
@@ -363,15 +364,24 @@ export default function CadastroProfissionalPage() {
         );
       }
 
-      // 👉 6) Redirecionar pro painel usando o ID do usuário
+      // 7) Redirecionar pro painel
       router.push(
         `/painel/profissional?id=${user.id}&apelido=${encodeURIComponent(
           apelido
         )}`
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setErro("Ocorreu um erro inesperado. Tente novamente.");
+      const raw = String(err?.message || "").toLowerCase();
+      if (raw.includes("load failed") || raw.includes("failed to fetch")) {
+        setErro(
+          "Não conseguimos conectar ao servidor agora. Verifique sua internet e tente novamente."
+        );
+      } else {
+        setErro(
+          err?.message || "Ocorreu um erro inesperado. Tente novamente."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -649,7 +659,7 @@ export default function CadastroProfissionalPage() {
             />
           </div>
 
-          {/* Senhas - EMPILHADAS */}
+          {/* Senhas */}
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <label
@@ -699,6 +709,7 @@ export default function CadastroProfissionalPage() {
                 type="password"
                 value={confirmarSenha}
                 onChange={(e) => setConfirmarSenha(e.target.value)}
+                placeholder="Repita a senha"
                 style={{
                   padding: "12px 14px",
                   borderRadius: "10px",
@@ -713,7 +724,7 @@ export default function CadastroProfissionalPage() {
             </div>
           </div>
 
-          {/* Função principal – input com sugestões */}
+          {/* Função principal */}
           <div
             style={{ display: "flex", flexDirection: "column", gap: "6px" }}
           >
