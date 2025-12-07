@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabaseClient";
+import { BlocoDeNotasProfissional } from "./BlocoDeNotasProfissional";
 
 type ProfissionalResumo = {
   id?: string;
@@ -76,8 +77,7 @@ export default function PainelProfissionalPage() {
     profissional?.apelido || profissional?.nome || "Profissional";
   const funcaoMostrada =
     profissional?.funcao || profissional?.area || "Profissional da construção";
-  const local =
-    profissional?.localizacao || "Localização não informada";
+  const local = profissional?.localizacao || "Localização não informada";
 
   // 2) Carrega obras de galeria no Supabase
   useEffect(() => {
@@ -283,6 +283,81 @@ export default function PainelProfissionalPage() {
             <p style={{ color: "#6B7280" }}>
               <strong>{obrasAndamento.length}</strong> ativa(s)
             </p>
+          </div>
+        </section>
+
+        {/* FERRAMENTAS / CÁLCULOS DA OBRA */}
+        <section
+          style={{
+            marginBottom: 16,
+            padding: "10px 12px",
+            borderRadius: 18,
+            border: "1px solid #E5E7EB",
+            background: "#F9FAFB",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              color: "#111827",
+              marginBottom: 8,
+            }}
+          >
+            Ferramentas para suas obras
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            <Link
+              href="/painel/calculos?tipo=profissional"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "10px 12px",
+                borderRadius: 14,
+                background: "#FFFFFF",
+                border: "1px solid #E5E7EB",
+                textDecoration: "none",
+              }}
+            >
+              <div>
+                <p
+                  style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    color: "#111827",
+                  }}
+                >
+                  Cálculos da obra
+                </p>
+                <p
+                  style={{
+                    fontSize: "0.74rem",
+                    color: "#6B7280",
+                    marginTop: 2,
+                  }}
+                >
+                  Acesse calculadoras de concreto, blocos, aço, drywall
+                  e muito mais para organizar o orçamento das obras.
+                </p>
+              </div>
+              <span
+                style={{
+                  fontSize: "1rem",
+                  color: "#2563EB",
+                  marginLeft: 8,
+                }}
+              >
+                →
+              </span>
+            </Link>
           </div>
         </section>
 
@@ -632,6 +707,11 @@ export default function PainelProfissionalPage() {
             </div>
           )}
         </section>
+
+        {/* BLOCO DE NOTAS DO PROFISSIONAL */}
+        {!isDemo && profissional?.id && (
+          <BlocoDeNotasProfissional profissionalId={profissional.id} />
+        )}
 
         {/* RODAPÉ / SAIR */}
         <div
