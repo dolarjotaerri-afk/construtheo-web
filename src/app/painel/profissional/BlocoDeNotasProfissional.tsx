@@ -40,7 +40,7 @@ export function BlocoDeNotasProfissional({
       console.error("Erro ao carregar anotações:", error);
       setErro("Não foi possível carregar suas anotações.");
     } else {
-      setAnotacoes(data as Anotacao[]);
+      setAnotacoes((data as Anotacao[]) || []);
     }
 
     setCarregando(false);
@@ -80,34 +80,83 @@ export function BlocoDeNotasProfissional({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-4 sm:p-5 mt-4">
-      <h2 className="text-lg font-semibold text-slate-900 mb-2">
+    <section
+      style={{
+        marginTop: 8,
+        marginBottom: 16,
+        padding: "10px 12px 12px",
+        borderRadius: 18,
+        border: "1px solid #E5E7EB",
+        background: "#F9FAFB",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "0.8rem",
+          fontWeight: 600,
+          color: "#111827",
+          marginBottom: 6,
+        }}
+      >
         Bloco de notas das obras
-      </h2>
-      <p className="text-sm text-slate-500 mb-3">
+      </p>
+
+      <p
+        style={{
+          fontSize: "0.78rem",
+          color: "#6B7280",
+          marginBottom: 10,
+        }}
+      >
         Use este espaço para anotar detalhes importantes das suas obras,
         orçamentos, combinações com o cliente, etc.
       </p>
 
-      <form onSubmit={handleSalvar} className="space-y-3 mb-4">
+      <form onSubmit={handleSalvar} style={{ marginBottom: 10 }}>
+        <textarea
+          rows={3}
+          placeholder="Escreva aqui suas anotações..."
+          value={conteudo}
+          onChange={(e) => setConteudo(e.target.value)}
+          style={{
+            width: "100%",
+            borderRadius: 12,
+            border: "1px solid #E5E7EB",
+            padding: "8px 10px",
+            fontSize: "0.8rem",
+            color: "#111827",
+            marginBottom: 6,
+            resize: "vertical",
+          }}
+        />
+
         <input
           type="text"
           placeholder="Título (opcional ex: Obra do João, Reforma da cozinha...)"
           value={titulo}
           onChange={(e) => setTitulo(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-        />
-
-        <textarea
-          rows={4}
-          placeholder="Escreva aqui suas anotações..."
-          value={conteudo}
-          onChange={(e) => setConteudo(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+          style={{
+            width: "100%",
+            borderRadius: 12,
+            border: "1px solid #E5E7EB",
+            padding: "8px 10px",
+            fontSize: "0.78rem",
+            color: "#111827",
+            marginBottom: 8,
+          }}
         />
 
         {erro && (
-          <p className="text-sm text-red-500 bg-red-50 rounded-xl px-3 py-2">
+          <p
+            style={{
+              fontSize: "0.75rem",
+              color: "#B91C1C",
+              background: "#FEE2E2",
+              borderRadius: 10,
+              padding: "6px 8px",
+              marginBottom: 6,
+            }}
+          >
             {erro}
           </p>
         )}
@@ -115,35 +164,101 @@ export function BlocoDeNotasProfissional({
         <button
           type="submit"
           disabled={salvando || !conteudo.trim()}
-          className="w-full sm:w-auto inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold text-white bg-sky-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+          style={{
+            width: "100%",
+            borderRadius: 999,
+            padding: "8px 12px",
+            border: "none",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            color: "#FFFFFF",
+            background: salvando || !conteudo.trim()
+              ? "#CBD5F5"
+              : "linear-gradient(to right, #0284C7, #0EA5E9)",
+            cursor:
+              salvando || !conteudo.trim() ? "default" : "pointer",
+          }}
         >
           {salvando ? "Salvando..." : "Salvar anotação"}
         </button>
       </form>
 
-      <div className="border-t border-slate-100 pt-3">
+      <div
+        style={{
+          borderTop: "1px solid #E5E7EB",
+          paddingTop: 8,
+          maxHeight: 210,
+          overflowY: "auto",
+        }}
+      >
         {carregando ? (
-          <p className="text-sm text-slate-500">Carregando anotações...</p>
+          <p
+            style={{
+              fontSize: "0.78rem",
+              color: "#6B7280",
+            }}
+          >
+            Carregando anotações...
+          </p>
         ) : anotacoes.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            Você ainda não tem anotações. Comece criando a primeira acima. 😊
+          <p
+            style={{
+              fontSize: "0.78rem",
+              color: "#64748B",
+            }}
+          >
+            Você ainda não tem anotações. Comece criando a primeira
+            acima. 😊
           </p>
         ) : (
-          <ul className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
             {anotacoes.map((nota) => (
               <li
                 key={nota.id}
-                className="border border-slate-100 rounded-xl px-3 py-2"
+                style={{
+                  borderRadius: 12,
+                  border: "1px solid #E5E7EB",
+                  background: "#FFFFFF",
+                  padding: "6px 8px",
+                }}
               >
                 {nota.titulo && (
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p
+                    style={{
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      color: "#111827",
+                      marginBottom: 2,
+                    }}
+                  >
                     {nota.titulo}
                   </p>
                 )}
-                <p className="text-sm text-slate-700 whitespace-pre-line">
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "#4B5563",
+                    whiteSpace: "pre-line",
+                  }}
+                >
                   {nota.conteudo}
                 </p>
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p
+                  style={{
+                    marginTop: 3,
+                    fontSize: "0.68rem",
+                    color: "#9CA3AF",
+                  }}
+                >
                   {new Date(nota.created_at).toLocaleString("pt-BR", {
                     day: "2-digit",
                     month: "2-digit",
@@ -157,6 +272,6 @@ export function BlocoDeNotasProfissional({
           </ul>
         )}
       </div>
-    </div>
+    </section>
   );
 }
