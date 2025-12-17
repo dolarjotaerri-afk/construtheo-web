@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { supabase } from "../../../lib/supabaseClient";
-import { TipoUsuario } from "../../../utils/codigosVerificacao";
+import { getSupabaseServer } from "../../../lib/supabaseServer";
+import type { TipoUsuario } from "../../../utils/codigosVerificacao";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
+  const supabase = getSupabaseServer();
+
   try {
     const { tipoUsuario, usuarioId, codigo } = (await req.json()) as {
       tipoUsuario: TipoUsuario;
@@ -21,15 +23,14 @@ export async function POST(req: Request) {
 
     const agora = new Date().toISOString();
 
-    // Busca código válido, não usado e não expirado
     const { data, error } = await supabase
       .from("codigos_verificacao")
       .select("*")
       .eq("tipo_usuario", tipoUsuario)
       .eq("usuario_id", usuarioId)
-      .eq("codigo", codigo)
+      .eq("codigo", codigo.trim())
       .eq("usado", false)
-      .gte("expiracao", agora) // expiracao >= agora (ainda válido)
+      .gte("expiracao", agora)
       .maybeSingle();
 
     if (error) {
@@ -47,7 +48,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // marca código como usado
     const { error: erroUpdateCodigo } = await supabase
       .from("codigos_verificacao")
       .update({ usado: true })
@@ -57,7 +57,6 @@ export async function POST(req: Request) {
       console.error("Erro ao marcar código como usado:", erroUpdateCodigo);
     }
 
-    // tabela alvo
     const tabela =
       tipoUsuario === "cliente"
         ? "clientes"
