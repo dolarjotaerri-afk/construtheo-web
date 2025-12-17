@@ -1,24 +1,19 @@
-"use client";
-
 import { createClient } from "@supabase/supabase-js";
 
-let client: any = null;
+let serverClient: ReturnType<typeof createClient> | null = null;
 
-export function getSupabaseClient() {
-  if (client) return client;
+export function getSupabaseServer() {
+  if (serverClient) return serverClient;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
-      "Supabase não configurado. Verifique NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      "Supabase Server não configurado. Verifique SUPABASE_SERVICE_ROLE_KEY."
     );
   }
 
-  client = createClient(supabaseUrl, supabaseAnonKey);
-  return client;
+  serverClient = createClient(supabaseUrl, serviceRoleKey);
+  return serverClient;
 }
-
-export const supabase = getSupabaseClient();
- 
