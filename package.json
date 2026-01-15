@@ -2,9 +2,13 @@
   "name": "construtheo-web",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.7.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NEXT_DISABLE_TURBOPACK=1 next build",
     "start": "next start",
     "lint": "eslint"
   },
