@@ -12,8 +12,11 @@ type CalcItem = {
 export default function PainelCalculosPage() {
   const router = useRouter();
 
-  // estado para o tipo da operação (cliente/profissional)
+  // estado para o tipo da operação (cliente/profissional) vindo da URL
   const [tipo, setTipo] = useState<string | null>(null);
+
+  // controle de autorização
+  const [verificandoAcesso, setVerificandoAcesso] = useState(true);
 
   // lê ?tipo= da URL no browser
   useEffect(() => {
@@ -24,6 +27,23 @@ export default function PainelCalculosPage() {
 
     if (tipoParam) setTipo(tipoParam);
   }, []);
+
+  // ---------- GUARD DE ACESSO ----------
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const profStr = localStorage.getItem("construtheo_profissional_atual");
+    const clienteStr = localStorage.getItem("construtheo_cliente_atual");
+
+    // só entra se tiver cliente OU profissional
+    if (!profStr && !clienteStr) {
+      // ninguém logado -> manda pra login
+      router.replace("/login");
+      return;
+    }
+
+    setVerificandoAcesso(false);
+  }, [router]);
 
   // lista de cálculos básicos (gratuitos)
   const calculosGratis: CalcItem[] = [
@@ -43,7 +63,7 @@ export default function PainelCalculosPage() {
     paginas.push(calculosGratis.slice(i, i + 4));
   }
 
-  // carrosel PRO
+  // carrossel PRO
   const calculosProCarrossel = [
     "Calcular Ferro / Aço",
     "Calcular Formas",
@@ -69,12 +89,80 @@ export default function PainelCalculosPage() {
     return () => clearInterval(id);
   }, []);
 
-  // botão voltar
+  // botão voltar -> prioridade: tipo da URL, depois localStorage
   const handleVoltar = () => {
-    if (tipo === "profissional") router.push("/painel/profissional");
-    else if (tipo === "cliente") router.push("/painel/cliente");
-    else router.back();
+    if (typeof window === "undefined") {
+      router.push("/login");
+      return;
+    }
+
+    const profStr = localStorage.getItem("construtheo_profissional_atual");
+    const clienteStr = localStorage.getItem("construtheo_cliente_atual");
+
+    // 1) PRIORIDADE: tipo vindo da URL (quem abriu a calculadora)
+
+    // CLIENTE USANDO
+    if (tipo === "cliente") {
+      router.push("/painel/cliente");
+      return;
+    }
+
+    // PROFISSIONAL USANDO
+    if (tipo === "profissional") {
+      if (profStr) {
+        try {
+          const prof = JSON.parse(profStr);
+          const id = prof?.id;
+          const apelido = encodeURIComponent(prof?.apelido || "profissional");
+
+          if (id) {
+            router.push(`/painel/profissional?id=${id}&apelido=${apelido}`);
+          } else {
+            router.push("/painel/profissional");
+          }
+        } catch {
+          router.push("/painel/profissional");
+        }
+      } else {
+        router.push("/painel/profissional");
+      }
+      return;
+    }
+
+    // 2) Fallback: se não veio tipo na URL, decide pelo localStorage
+
+    // se tem cliente salvo, manda pra painel do cliente
+    if (clienteStr) {
+      router.push("/painel/cliente");
+      return;
+    }
+
+    // se tem profissional salvo, manda pra painel do profissional
+    if (profStr) {
+      try {
+        const prof = JSON.parse(profStr);
+        const id = prof?.id;
+        const apelido = encodeURIComponent(prof?.apelido || "profissional");
+
+        if (id) {
+          router.push(`/painel/profissional?id=${id}&apelido=${apelido}`);
+        } else {
+          router.push("/painel/profissional");
+        }
+      } catch {
+        router.push("/painel/profissional");
+      }
+      return;
+    }
+
+    // 3) Último caso: ninguém logado
+    router.push("/login");
   };
+
+  // enquanto verifica acesso, não renderiza o conteúdo (evita flicker)
+  if (verificandoAcesso) {
+    return null;
+  }
 
   return (
     <main

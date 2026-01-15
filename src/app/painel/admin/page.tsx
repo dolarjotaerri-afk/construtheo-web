@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "../../../lib/supabaseClient";
 
 type Metrica = {
   id: number;
@@ -20,7 +22,7 @@ type Atividade = {
 };
 
 type Pendencia = {
-  id: number;
+  id: string; // id da tabela (uuid)
   tipo: "profissional" | "empresa";
   nome: string;
   detalhe: string;
@@ -33,61 +35,7 @@ type Alerta = {
   descricao: string;
 };
 
-// ---------- BASE PARA DEPOIS VIRAR DADOS DO BACKEND ----------
-
-// Estes números por enquanto são MOCK.
-// Depois você pode puxar do Supabase / API e só trocar aqui
-// ou transformar em props / chamadas assíncronas.
-
-const totalClientes = 1247;
-const onlineClientes = 18;
-
-const totalProfissionais = 326;
-const onlineProfissionais = 9;
-
-const totalEmpresas = 57;
-const onlineEmpresas = 4;
-
-const totalUsuarios =
-  totalClientes + totalProfissionais + totalEmpresas;
-const onlineTotal =
-  onlineClientes + onlineProfissionais + onlineEmpresas;
-
-// Métricas principais do topo
-const metricasResumo: Metrica[] = [
-  {
-    id: 1,
-    chave: "clientes",
-    titulo: "Clientes cadastrados",
-    valor: totalClientes.toLocaleString("pt-BR"),
-    detalhe: "pessoas organizando sua obra",
-    onlineAgora: onlineClientes,
-  },
-  {
-    id: 2,
-    chave: "profissionais",
-    titulo: "Profissionais cadastrados",
-    valor: totalProfissionais.toLocaleString("pt-BR"),
-    detalhe: "prestando serviços pela plataforma",
-    onlineAgora: onlineProfissionais,
-  },
-  {
-    id: 3,
-    chave: "empresas",
-    titulo: "Empresas cadastradas",
-    valor: totalEmpresas.toLocaleString("pt-BR"),
-    detalhe: "fornecedores e parceiros ativos",
-    onlineAgora: onlineEmpresas,
-  },
-  {
-    id: 4,
-    chave: "total",
-    titulo: "Total de usuários",
-    valor: totalUsuarios.toLocaleString("pt-BR"),
-    detalhe: "somando clientes, profissionais e empresas",
-    onlineAgora: onlineTotal,
-  },
-];
+// ---------- MOCKS (podem virar dados reais depois) ----------
 
 const atividadesRecentes: Atividade[] = [
   {
@@ -113,27 +61,6 @@ const atividadesRecentes: Atividade[] = [
     tipo: "sistema",
     descricao: "Nova calculadora gratuita publicada: Calcular vidros",
     quando: "há 2 h",
-  },
-];
-
-const pendenciasVerificacao: Pendencia[] = [
-  {
-    id: 1,
-    tipo: "profissional",
-    nome: "Carlos Pedreiro",
-    detalhe: "Solicitou verificação de identidade e endereço",
-  },
-  {
-    id: 2,
-    tipo: "empresa",
-    nome: "Usina ConcreMax",
-    detalhe: "Aguardando validação de CNPJ e contrato",
-  },
-  {
-    id: 3,
-    tipo: "profissional",
-    nome: "Mariana Eletricista",
-    detalhe: "Denúncia resolvida, revisar histórico antes de liberar",
   },
 ];
 
@@ -177,8 +104,249 @@ const scrollCarrossel = (
 };
 
 export default function PainelAdminPage() {
+  const router = useRouter();
+
   const atividadesRef = useRef<HTMLDivElement | null>(null);
   const pendenciasRef = useRef<HTMLDivElement | null>(null);
+
+  const [pendencias, setPendencias] = useState<Pendencia[]>([]);
+  const [carregandoPendencias, setCarregandoPendencias] =
+    useState(false);
+
+  const [verificandoAdmin, setVerificandoAdmin] = useState(true);
+    // métricas reais
+  const [metricasResumo, setMetricasResumo] = useState<Metrica[]>([]);
+  const [carregandoMetricas, setCarregandoMetricas] = useState(true);
+
+
+  // --------- Verifica se usuário é ADMIN ---------
+  useEffect(() => {
+    const verificarAdmin = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error || !data.user) {
+        // não logado → manda pro login do admin
+        router.push("/admin/login");
+        return;
+      }
+
+      const role = (data.user.app_metadata as any)?.role;
+
+      if (role !== "admin") {
+        // logado mas não é admin → faz logout e manda pro login normal
+        await supabase.auth.signOut();
+        router.push("/login");
+        return;
+      }
+
+      setVerificandoAdmin(false);
+    };
+
+    verificarAdmin();
+  }, [router]);
+  // --------- Carrega MÉTRICAS reais (clientes, profissionais, empresas) ---------
+  useEffect(() => {
+    if (verificandoAdmin) return;
+
+    const carregarMetricas = async () => {
+      setCarregandoMetricas(true);
+      try {
+        // Conta clientes
+        const { count: clientesCount, error: erroClientes } = await supabase
+          .from("clientes")
+          .select("*", { count: "exact", head: true });
+
+        if (erroClientes) {
+          console.error("Erro ao contar clientes:", erroClientes);
+        }
+
+        // Conta profissionais
+        const { count: profsCount, error: erroProfs } = await supabase
+          .from("profissionais")
+          .select("*", { count: "exact", head: true });
+
+        if (erroProfs) {
+          console.error("Erro ao contar profissionais:", erroProfs);
+        }
+
+        // Conta empresas
+        const { count: empsCount, error: erroEmps } = await supabase
+          .from("empresas")
+          .select("*", { count: "exact", head: true });
+
+        if (erroEmps) {
+          console.error("Erro ao contar empresas:", erroEmps);
+        }
+
+        const totalClientes = clientesCount ?? 0;
+        const totalProfissionais = profsCount ?? 0;
+        const totalEmpresas = empsCount ?? 0;
+        const totalUsuarios =
+          totalClientes + totalProfissionais + totalEmpresas;
+
+        // Por enquanto, onlineAgora = 0 (depois conectamos na tabela de online)
+        const metricas: Metrica[] = [
+          {
+            id: 1,
+            chave: "clientes",
+            titulo: "Clientes cadastrados",
+            valor: totalClientes.toLocaleString("pt-BR"),
+            detalhe: "pessoas organizando sua obra",
+            onlineAgora: 0,
+          },
+          {
+            id: 2,
+            chave: "profissionais",
+            titulo: "Profissionais cadastrados",
+            valor: totalProfissionais.toLocaleString("pt-BR"),
+            detalhe: "prestando serviços pela plataforma",
+            onlineAgora: 0,
+          },
+          {
+            id: 3,
+            chave: "empresas",
+            titulo: "Empresas cadastradas",
+            valor: totalEmpresas.toLocaleString("pt-BR"),
+            detalhe: "fornecedores e parceiros ativos",
+            onlineAgora: 0,
+          },
+          {
+            id: 4,
+            chave: "total",
+            titulo: "Total de usuários",
+            valor: totalUsuarios.toLocaleString("pt-BR"),
+            detalhe: "somando clientes, profissionais e empresas",
+            onlineAgora: 0,
+          },
+        ];
+
+        setMetricasResumo(metricas);
+      } catch (err) {
+        console.error("Erro geral ao carregar métricas:", err);
+      } finally {
+        setCarregandoMetricas(false);
+      }
+    };
+
+    carregarMetricas();
+  }, [verificandoAdmin]);
+
+  // --------- Carrega pendências reais do Supabase ---------
+  useEffect(() => {
+    if (verificandoAdmin) return;
+
+    const carregarPendencias = async () => {
+      setCarregandoPendencias(true);
+      try {
+        // PROFISSIONAIS pendentes
+        const { data: profs, error: erroProfs } = await supabase
+          .from("profissionais")
+          .select("id, nome, area, funcao, localizacao, whatsapp, status")
+          .eq("status", "pendente")
+          .limit(50);
+
+        if (erroProfs) {
+          console.error("Erro ao buscar profissionais pendentes:", erroProfs);
+        }
+
+        const pendProfs: Pendencia[] =
+          (profs || []).map((p: any) => ({
+            id: p.id,
+            tipo: "profissional",
+            nome: p.nome || "Profissional sem nome",
+            detalhe: [
+              p.funcao,
+              p.area,
+              p.localizacao,
+              p.whatsapp && `WhatsApp: ${p.whatsapp}`,
+            ]
+              .filter(Boolean)
+              .join(" • "),
+          })) ?? [];
+
+        // EMPRESAS pendentes
+        const { data: emps, error: erroEmps } = await supabase
+          .from("empresas")
+          .select("id, nome, tipo, localizacao, whatsapp, status")
+          .eq("status", "pendente")
+          .limit(50);
+
+        if (erroEmps) {
+          console.error("Erro ao buscar empresas pendentes:", erroEmps);
+        }
+
+        const pendEmps: Pendencia[] =
+          (emps || []).map((e: any) => ({
+            id: e.id,
+            tipo: "empresa",
+            nome: e.nome || "Empresa sem nome",
+            detalhe: [
+              e.tipo,
+              e.localizacao,
+              e.whatsapp && `WhatsApp: ${e.whatsapp}`,
+            ]
+              .filter(Boolean)
+              .join(" • "),
+          })) ?? [];
+
+        setPendencias([...pendProfs, ...pendEmps]);
+      } catch (err) {
+        console.error("Erro geral ao carregar pendências:", err);
+      } finally {
+        setCarregandoPendencias(false);
+      }
+    };
+
+    carregarPendencias();
+  }, [verificandoAdmin]);
+
+  // Atualiza status (aprovar/bloquear)
+  const atualizarStatusPendencia = async (
+    pendencia: Pendencia,
+    novoStatus: "aprovado" | "bloqueado"
+  ) => {
+    const tabela =
+      pendencia.tipo === "profissional" ? "profissionais" : "empresas";
+
+    const { error } = await supabase
+      .from(tabela)
+      .update({ status: novoStatus })
+      .eq("id", pendencia.id);
+
+    if (error) {
+      console.error("Erro ao atualizar status:", error);
+      alert("Não foi possível atualizar. Tente novamente.");
+      return;
+    }
+
+    // remove da lista local
+    setPendencias((prev) => prev.filter((p) => p.id !== pendencia.id));
+  };
+
+  // Enquanto verifica se é admin
+  if (verificandoAdmin) {
+    return (
+      <main
+        style={{
+          width: "100%",
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#F9FAFB",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "0.9rem",
+            color: "#6B7280",
+          }}
+        >
+          Verificando permissões do administrador...
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main
@@ -364,7 +532,8 @@ export default function PainelAdminPage() {
           </div>
         </section>
 
-        {/* RESUMO RÁPIDO COM TOTAL E ONLINE AGORA */}
+        {/* RESUMO RÁPIDO */}
+        {/* RESUMO RÁPIDO */}
         <section>
           <h2
             style={{
@@ -376,67 +545,92 @@ export default function PainelAdminPage() {
           >
             Visão geral da plataforma
           </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              gap: "8px",
-            }}
-          >
-            {metricasResumo.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  padding: "10px 10px",
-                  borderRadius: "16px",
-                  background: "#F9FAFB",
-                  border: "1px solid #E5E7EB",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "2px",
-                }}
-              >
-                <span
+
+          {carregandoMetricas && (
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: "#6B7280",
+              }}
+            >
+              Carregando métricas...
+            </p>
+          )}
+
+          {!carregandoMetricas && metricasResumo.length === 0 && (
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: "#6B7280",
+              }}
+            >
+              Não foi possível carregar as métricas agora.
+            </p>
+          )}
+
+          {!carregandoMetricas && metricasResumo.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: "8px",
+              }}
+            >
+              {metricasResumo.map((m) => (
+                <div
+                  key={m.id}
                   style={{
-                    fontSize: "0.76rem",
-                    color: "#6B7280",
+                    padding: "10px 10px",
+                    borderRadius: "16px",
+                    background: "#F9FAFB",
+                    border: "1px solid #E5E7EB",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
                   }}
                 >
-                  {m.titulo}
-                </span>
-                <span
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: "#111827",
-                  }}
-                >
-                  {m.valor}
-                </span>
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    color: "#9CA3AF",
-                  }}
-                >
-                  {m.detalhe}
-                </span>
-                <span
-                  style={{
-                    marginTop: "4px",
-                    fontSize: "0.7rem",
-                    color: "#16A34A",
-                    fontWeight: 600,
-                  }}
-                >
-                  online agora: {m.onlineAgora.toLocaleString("pt-BR")}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <span
+                    style={{
+                      fontSize: "0.76rem",
+                      color: "#6B7280",
+                    }}
+                  >
+                    {m.titulo}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      color: "#111827",
+                    }}
+                  >
+                    {m.valor}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      color: "#9CA3AF",
+                    }}
+                  >
+                    {m.detalhe}
+                  </span>
+                  <span
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "0.7rem",
+                      color: "#16A34A",
+                      fontWeight: 600,
+                    }}
+                  >
+                    online agora: {m.onlineAgora.toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* ATIVIDADES RECENTES (carrossel) */}
+        {/* ATIVIDADES RECENTES */}
         <section
           style={{
             padding: "10px 10px 12px",
@@ -672,7 +866,7 @@ export default function PainelAdminPage() {
             })}
           </div>
 
-          {/* Carrossel de pendências */}
+          {/* Carrossel de pendências (reais) */}
           <div
             ref={pendenciasRef}
             className="carrossel-admin"
@@ -684,7 +878,29 @@ export default function PainelAdminPage() {
               scrollbarWidth: "none",
             }}
           >
-            {pendenciasVerificacao.map((p) => (
+            {carregandoPendencias && pendencias.length === 0 && (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#7F1D1D",
+                }}
+              >
+                Carregando pendências...
+              </div>
+            )}
+
+            {!carregandoPendencias && pendencias.length === 0 && (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "#7F1D1D",
+                }}
+              >
+                Nenhum cadastro pendente no momento 🎉
+              </div>
+            )}
+
+            {pendencias.map((p) => (
               <div
                 key={p.id}
                 style={{
@@ -741,6 +957,9 @@ export default function PainelAdminPage() {
                 >
                   <button
                     type="button"
+                    onClick={() =>
+                      atualizarStatusPendencia(p, "aprovado")
+                    }
                     style={{
                       flex: 1,
                       padding: "5px 0",
@@ -757,6 +976,9 @@ export default function PainelAdminPage() {
                   </button>
                   <button
                     type="button"
+                    onClick={() =>
+                      atualizarStatusPendencia(p, "bloqueado")
+                    }
                     style={{
                       flex: 1,
                       padding: "5px 0",
@@ -856,29 +1078,31 @@ export default function PainelAdminPage() {
                   alignItems: "center",
                 }}
               >
-                <span>Gerenciar usuários (clientes, profissionais, empresas)</span>
+                <span>
+                  Gerenciar usuários (clientes, profissionais, empresas)
+                </span>
                 <span>→</span>
               </div>
             </Link>
 
-            <Link href="/admin/denuncias" style={{ textDecoration: "none" }}>
-              <div
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "999px",
-                  background: "#F9FAFB",
-                  border: "1px solid #E5E7EB",
-                  fontSize: "0.82rem",
-                  color: "#111827",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span>Denúncias, bloqueios e histórico de segurança</span>
-                <span>→</span>
-              </div>
-            </Link>
+<Link href="/admin/denuncias" style={{ textDecoration: "none" }}>
+  <div
+    style={{
+      padding: "10px 12px",
+      borderRadius: "999px",
+      background: "#F9FAFB",
+      border: "1px solid #E5E7EB",
+      fontSize: "0.82rem",
+      color: "#111827",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    }}
+  >
+    <span>Denúncias, bloqueios e histórico de segurança</span>
+    <span>→</span>
+  </div>
+</Link>
 
             <Link
               href="/admin/calculadoras"

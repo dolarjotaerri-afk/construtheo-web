@@ -1,6 +1,8 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import { Poppins } from "next/font/google";
+import { PwaRegister } from "../components/PwaRegister";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -9,7 +11,18 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "ConstruThéo",
-  description: "O Aplicativo completo Para sua Obra!",
+  description: "O Aplicativo completo para sua Obra!",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#0EA5E9",
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ConstruThéo",
+  },
 };
 
 export default function RootLayout({
@@ -19,7 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={poppins.className}>{children}</body>
+      <body className={poppins.className}>
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }

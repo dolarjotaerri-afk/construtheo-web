@@ -106,18 +106,17 @@ export default function EscolhaTipoEmpresaPage() {
   };
 
   return (
-    <main
+    <div
       style={{
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-        padding: "32px 0",
+        maxWidth: "440px",
+        margin: "0 auto",
+        paddingTop: "12px",
+        paddingBottom: "32px",
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "440px",
           background: "#FFFFFF",
           borderRadius: "28px",
           padding: "22px 22px 22px",
@@ -188,7 +187,7 @@ export default function EscolhaTipoEmpresaPage() {
           </p>
         </header>
 
-        {/* SEÇÕES – 2 FILEIRAS, SEM ROLAR A PÁGINA */}
+        {/* SEÇÕES */}
         <div
           style={{
             display: "flex",
@@ -230,6 +229,7 @@ export default function EscolhaTipoEmpresaPage() {
                   gap: "10px",
                   paddingBottom: "4px",
                   scrollbarWidth: "none", // Firefox
+                  maxWidth: "100%",
                 }}
               >
                 {secao.itens.map((tipo) => (
@@ -238,7 +238,7 @@ export default function EscolhaTipoEmpresaPage() {
                     href={`/cadastro/empresa?tipo=${tipo.slug}`}
                     style={{
                       textDecoration: "none",
-                      minWidth: "68%", // menor pra caber mais na tela
+                      minWidth: "68%",
                       maxWidth: "68%",
                     }}
                   >
@@ -298,7 +298,7 @@ export default function EscolhaTipoEmpresaPage() {
                 ))}
               </div>
 
-              {/* CONTROLES DE SETA (FUNCIONANDO) */}
+              {/* CONTROLES DE SETA */}
               <div
                 style={{
                   display: "flex",
@@ -356,6 +356,6 @@ export default function EscolhaTipoEmpresaPage() {
           `}
         </style>
       </div>
-    </main>
+    </div>
   );
 }
