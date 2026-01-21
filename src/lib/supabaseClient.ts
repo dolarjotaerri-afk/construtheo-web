@@ -1,5 +1,3 @@
 // src/lib/supabaseClient.ts
-// Arquivo "ponte" para manter compatibilidade com imports antigos
-
+// Somente client (browser). Não pode importar nada de server aqui.
 export { supabase } from "./supabaseBrowser";
-export { getSupabaseServer } from "./supabaseServer";
