@@ -102,7 +102,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             marginBottom: 16,
           }}
         >
-          O aplicativo completo para sua obra!
+          Tudo que sua obra precisa, na palma da sua mão!
         </p>
 
         <p
@@ -111,7 +111,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             color: "#94a3b8",
           }}
         >
-          Carregando seu painel de construção...
+          Conectando você às melhores opções da sua região...
         </p>
       </div>
     </main>
