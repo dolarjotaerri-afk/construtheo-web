@@ -165,7 +165,7 @@ export default function RootPage() {
               textAlign: "center",
             }}
           >
-            Parceiros em destaque
+            Melhores Empresas da sua região
           </p>
 
           <div
