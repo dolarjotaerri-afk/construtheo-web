@@ -5,6 +5,34 @@ import Image from "next/image";
 import Link from "next/link";
 import SplashScreen from "./SplashScreen";
 
+const featuredPartners = [
+  {
+    name: "Depósito Modelo",
+    category: "Depósito",
+    badge: "Parceiro",
+  },
+  {
+    name: "Poços Almeida",
+    category: "Poço artesiano",
+    badge: "Destaque",
+  },
+  {
+    name: "Concreto Forte",
+    category: "Usina",
+    badge: "Parceiro",
+  },
+  {
+    name: "Solar Prime",
+    category: "Energia solar",
+    badge: "Destaque",
+  },
+  {
+    name: "Caçamba Rápida",
+    category: "Caçamba",
+    badge: "Parceiro",
+  },
+];
+
 export default function RootPage() {
   const [showSplash, setShowSplash] = useState(true);
 
@@ -93,17 +121,6 @@ export default function RootPage() {
               Sua obra conectada a{" "}
               <span style={{ color: "#2563EB" }}>tudo que ela precisa.</span>
             </h1>
-
-            <p
-              style={{
-                fontSize: "0.8rem",
-                color: "#6B7280",
-                maxWidth: "320px",
-              }}
-            >
-              Segurança, controle e os melhores parceiros para cada etapa da sua
-              construção.
-            </p>
           </div>
         </header>
 
@@ -137,6 +154,105 @@ export default function RootPage() {
           </Link>
         </div>
 
+        {/* CARROSSEL DE DESTAQUES */}
+        <section style={{ marginBottom: "18px" }}>
+          <p
+            style={{
+              fontSize: "0.74rem",
+              fontWeight: 700,
+              color: "#374151",
+              marginBottom: "10px",
+              textAlign: "center",
+            }}
+          >
+            Parceiros em destaque
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              overflowX: "auto",
+              paddingBottom: "4px",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {featuredPartners.map((partner) => (
+              <div
+                key={partner.name}
+                style={{
+                  minWidth: "150px",
+                  maxWidth: "150px",
+                  flexShrink: 0,
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "18px",
+                  background: "#F9FAFB",
+                  padding: "12px 12px 11px",
+                  boxShadow: "0 4px 10px rgba(15, 23, 42, 0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "999px",
+                    background: "#EFF6FF",
+                    border: "1px solid #DBEAFE",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#2563EB",
+                    fontWeight: 700,
+                    fontSize: "0.78rem",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {partner.name.charAt(0)}
+                </div>
+
+                <p
+                  style={{
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    color: "#111827",
+                    lineHeight: 1.25,
+                    marginBottom: "4px",
+                  }}
+                >
+                  {partner.name}
+                </p>
+
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "#6B7280",
+                    marginBottom: "8px",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {partner.category}
+                </p>
+
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "4px 8px",
+                    borderRadius: "999px",
+                    background: "#DBEAFE",
+                    color: "#1D4ED8",
+                    fontSize: "0.68rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {partner.badge}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* FRASE CENTRALIZADA */}
         <p
           style={{
@@ -168,7 +284,6 @@ export default function RootPage() {
               background: "#FFFFFF",
             }}
           >
-            {/* Ícone simples, sem fundo colorido forte */}
             <div
               style={{
                 fontSize: "1.1rem",
@@ -332,20 +447,6 @@ export default function RootPage() {
             </div>
           </section>
         </Link>
-
-        {/* RODAPÉ TEXTO */}
-        <p
-          style={{
-            fontSize: "0.74rem",
-            color: "#6B7280",
-            textAlign: "center",
-            marginTop: "6px",
-            lineHeight: 1.5,
-          }}
-        >
-          O ConstruThéo facilita sua obra de forma segura e eficiente, conectando
-          você ao que há de melhor na construção civil na sua região.
-        </p>
       </div>
     </main>
   );
