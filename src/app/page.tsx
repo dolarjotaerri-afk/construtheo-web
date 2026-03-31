@@ -72,7 +72,6 @@ export default function RootPage() {
             marginBottom: "18px",
           }}
         >
-          {/* Avatar mascote mais clean, sem fundo laranja */}
           <div
             style={{
               width: 56,
@@ -129,7 +128,7 @@ export default function RootPage() {
           style={{
             display: "flex",
             justifyContent: "center",
-            marginBottom: "16px",
+            marginBottom: "22px",
           }}
         >
           <Link
@@ -155,14 +154,23 @@ export default function RootPage() {
         </div>
 
         {/* CARROSSEL DE DESTAQUES */}
-        <section style={{ marginBottom: "18px" }}>
+        <section
+          style={{
+            marginBottom: "20px",
+            background: "#F8FAFC",
+            border: "1px solid #E5E7EB",
+            borderRadius: "22px",
+            padding: "14px 12px 14px",
+          }}
+        >
           <p
             style={{
-              fontSize: "0.74rem",
+              fontSize: "0.8rem",
               fontWeight: 700,
-              color: "#374151",
-              marginBottom: "10px",
+              color: "#111827",
+              marginBottom: "12px",
               textAlign: "center",
+              letterSpacing: "-0.01em",
             }}
           >
             Melhores Empresas da sua região
@@ -171,9 +179,11 @@ export default function RootPage() {
           <div
             style={{
               display: "flex",
-              gap: "10px",
+              gap: "12px",
               overflowX: "auto",
               paddingBottom: "4px",
+              paddingLeft: "2px",
+              paddingRight: "2px",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
@@ -182,30 +192,31 @@ export default function RootPage() {
               <div
                 key={partner.name}
                 style={{
-                  minWidth: "150px",
-                  maxWidth: "150px",
+                  minWidth: "142px",
+                  maxWidth: "142px",
                   flexShrink: 0,
                   border: "1px solid #E5E7EB",
-                  borderRadius: "18px",
-                  background: "#F9FAFB",
-                  padding: "12px 12px 11px",
-                  boxShadow: "0 4px 10px rgba(15, 23, 42, 0.05)",
+                  borderRadius: "20px",
+                  background: "#FFFFFF",
+                  padding: "13px 12px 12px",
+                  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
                 }}
               >
                 <div
                   style={{
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     borderRadius: "999px",
-                    background: "#EFF6FF",
+                    background: "linear-gradient(180deg, #EFF6FF, #F8FAFC)",
                     border: "1px solid #DBEAFE",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     color: "#2563EB",
                     fontWeight: 700,
-                    fontSize: "0.78rem",
-                    marginBottom: "10px",
+                    fontSize: "0.8rem",
+                    marginBottom: "12px",
+                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.08)",
                   }}
                 >
                   {partner.name.charAt(0)}
@@ -213,11 +224,12 @@ export default function RootPage() {
 
                 <p
                   style={{
-                    fontSize: "0.78rem",
+                    fontSize: "0.79rem",
                     fontWeight: 700,
                     color: "#111827",
                     lineHeight: 1.25,
-                    marginBottom: "4px",
+                    marginBottom: "5px",
+                    minHeight: "32px",
                   }}
                 >
                   {partner.name}
@@ -227,8 +239,9 @@ export default function RootPage() {
                   style={{
                     fontSize: "0.72rem",
                     color: "#6B7280",
-                    marginBottom: "8px",
+                    marginBottom: "10px",
                     lineHeight: 1.3,
+                    minHeight: "18px",
                   }}
                 >
                   {partner.category}
@@ -238,12 +251,16 @@ export default function RootPage() {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    padding: "4px 8px",
+                    justifyContent: "center",
+                    padding: "4px 9px",
                     borderRadius: "999px",
-                    background: "#DBEAFE",
+                    background:
+                      partner.badge === "Destaque" ? "#DBEAFE" : "#EEF2FF",
                     color: "#1D4ED8",
-                    fontSize: "0.68rem",
-                    fontWeight: 600,
+                    fontSize: "0.67rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.01em",
+                    boxShadow: "inset 0 0 0 1px rgba(37, 99, 235, 0.08)",
                   }}
                 >
                   {partner.badge}
