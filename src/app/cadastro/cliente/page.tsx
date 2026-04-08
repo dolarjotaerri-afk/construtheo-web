@@ -7,6 +7,7 @@ import { supabase } from "../../../lib/supabaseClient";
 import { buscarEnderecoPorCep } from "../../../lib/cepService";
 
 const steps = ["Dados básicos", "Contato", "Localização"];
+const CONSTRUTHEO_WHATSAPP = "5511988214713";
 
 export default function CadastroClientePage() {
   const router = useRouter();
@@ -195,8 +196,21 @@ export default function CadastroClientePage() {
       }
 
       // 4) Guarda resumo no localStorage
+      let resumoCliente: {
+        id: string;
+        nome: string;
+        apelido: string | null;
+        email: string;
+        whatsapp: string;
+        cidade: string | null;
+        estado: string | null;
+        bairro: string | null;
+        cep: string | null;
+        aceita_ofertas_whatsapp: boolean;
+      } | null = null;
+
       if (typeof window !== "undefined") {
-        const resumoCliente = {
+        resumoCliente = {
           id: user.id,
           nome,
           apelido: apelido || null,
@@ -215,7 +229,30 @@ export default function CadastroClientePage() {
         );
       }
 
-      // 5) Redireciona para o painel do cliente
+      // 5) Abre WhatsApp do ConstruThéo com os dados do cliente
+      if (typeof window !== "undefined" && resumoCliente) {
+        const mensagemWhatsapp = [
+          "Olá, sou novo cliente cadastrado no Construthéo.",
+          "",
+          `Nome: ${resumoCliente.nome}`,
+          `Apelido: ${resumoCliente.apelido || "Não informado"}`,
+          `E-mail: ${resumoCliente.email}`,
+          `WhatsApp: ${resumoCliente.whatsapp}`,
+          `Cidade: ${resumoCliente.cidade || "Não informada"}`,
+          `Estado: ${resumoCliente.estado || "Não informado"}`,
+          `Bairro: ${resumoCliente.bairro || "Não informado"}`,
+          `CEP: ${resumoCliente.cep || "Não informado"}`,
+          `Aceita ofertas no WhatsApp: ${resumoCliente.aceita_ofertas_whatsapp ? "Sim" : "Não"}`,
+        ].join("\n");
+
+        const linkWhatsapp = `https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${encodeURIComponent(
+          mensagemWhatsapp
+        )}`;
+
+        window.open(linkWhatsapp, "_blank", "noopener,noreferrer");
+      }
+
+      // 6) Redireciona para o painel do cliente
       router.push("/painel/cliente");
     } catch (err: any) {
       console.error(err);
