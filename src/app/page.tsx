@@ -5,21 +5,16 @@ import Image from "next/image";
 import Link from "next/link";
 import SplashScreen from "./SplashScreen";
 
+const CONSTRUTHEO_WHATSAPP = "5511988214713";
+
 const featuredPartners = [
   {
     name: "Depósito Formigão",
     category: "Depósito",
-    location: "Igaratá e Região",
+    location: "Igaratá/SP e Região",
     badge: "Parceiro",
     logo: "/logos/deposito.png",
     whatsapp: "5511944674658",
-  },
-  {
-    name: "Poços Artesianos Furo D'Água",
-    category: "Poço artesiano",
-    location: "Igaratá/SP e Região",
-    badge: "Parceiro",
-    whatsapp: "5511999999999",
   },
   {
     name: "DSA Energia Solar",
@@ -45,20 +40,6 @@ const featuredPartners = [
     logo: "/logos/vidracaria-alvarenga.png",
     whatsapp: "5511982081051",
   },
-  {
-    name: "HB Terraplanagem",
-    category: "Terraplanagem",
-    location: "Igaratá/SP e Região",
-    badge: "Parceiro",
-    whatsapp: "5511999999999",
-  },
-  {
-    name: "SeB Mármores e Granitos",
-    category: "Mármores e Granitos",
-    location: "Igaratá/SP e Região",
-    badge: "Parceiro",
-    whatsapp: "5511999999999",
-  },
 ];
 
 export default function RootPage() {
@@ -67,8 +48,32 @@ export default function RootPage() {
     (typeof featuredPartners)[number] | null
   >(null);
 
-  const whatsappMessage = useMemo(
+  const budgetMessage = useMemo(
     () => encodeURIComponent("Olá vim através do construthéo"),
+    []
+  );
+
+  const empresaMessage = useMemo(
+    () =>
+      encodeURIComponent(
+        "Olá, tenho interesse em cadastrar minha empresa no Construthéo."
+      ),
+    []
+  );
+
+  const profissionalMessage = useMemo(
+    () =>
+      encodeURIComponent(
+        "Olá, tenho interesse em me cadastrar como profissional da construção no Construthéo."
+      ),
+    []
+  );
+
+  const adicionarEmpresaMessage = useMemo(
+    () =>
+      encodeURIComponent(
+        "Olá, quero adicionar minha empresa no carrossel do Construthéo."
+      ),
     []
   );
 
@@ -261,21 +266,17 @@ export default function RootPage() {
                       overflow: "hidden",
                     }}
                   >
-                    {partner.logo ? (
-                      <Image
-                        src={partner.logo}
-                        alt={partner.name}
-                        width={42}
-                        height={42}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    ) : (
-                      partner.name.charAt(0)
-                    )}
+                    <Image
+                      src={partner.logo}
+                      alt={partner.name}
+                      width={42}
+                      height={42}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
                   </div>
 
                   <p
@@ -323,6 +324,88 @@ export default function RootPage() {
                   </span>
                 </button>
               ))}
+
+              {/* CARD ADICIONE SUA EMPRESA */}
+              <a
+                href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${adicionarEmpresaMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  minWidth: "142px",
+                  maxWidth: "142px",
+                  flexShrink: 0,
+                  border: "1px dashed #93C5FD",
+                  borderRadius: "20px",
+                  background: "#FFFFFF",
+                  padding: "13px 12px 12px",
+                  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.04)",
+                  textAlign: "left",
+                  textDecoration: "none",
+                }}
+              >
+                <div
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: "999px",
+                    background: "#EFF6FF",
+                    border: "1px solid #BFDBFE",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#2563EB",
+                    fontWeight: 700,
+                    fontSize: "1.15rem",
+                    marginBottom: "12px",
+                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.06)",
+                  }}
+                >
+                  +
+                </div>
+
+                <p
+                  style={{
+                    fontSize: "0.79rem",
+                    fontWeight: 700,
+                    color: "#111827",
+                    lineHeight: 1.25,
+                    marginBottom: "5px",
+                    minHeight: "32px",
+                  }}
+                >
+                  Adicione sua empresa
+                </p>
+
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "#6B7280",
+                    marginBottom: "10px",
+                    lineHeight: 1.3,
+                    minHeight: "32px",
+                  }}
+                >
+                  Depósito, serralheria, vidraçaria, caçamba e mais
+                </p>
+
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "4px 9px",
+                    borderRadius: "999px",
+                    background: "#EFF6FF",
+                    color: "#1D4ED8",
+                    fontSize: "0.67rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.01em",
+                    boxShadow: "inset 0 0 0 1px rgba(37, 99, 235, 0.08)",
+                  }}
+                >
+                  Novo parceiro
+                </span>
+              </a>
             </div>
           </section>
 
@@ -400,8 +483,10 @@ export default function RootPage() {
           </Link>
 
           {/* CARD: EMPRESA */}
-          <Link
-            href="/cadastro/empresa"
+          <a
+            href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${empresaMessage}`}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               textDecoration: "none",
             }}
@@ -444,8 +529,7 @@ export default function RootPage() {
                     marginBottom: 4,
                   }}
                 >
-                  Depósito, usina, caçamba, energia solar e outros serviços para
-                  obras.
+                  Cadastro inicial validado via WhatsApp do Construthéo.
                 </p>
                 <p
                   style={{
@@ -454,15 +538,17 @@ export default function RootPage() {
                     fontWeight: 500,
                   }}
                 >
-                  Faça parte do ConstruThéo. Realize seu cadastro.
+                  Inicie seu cadastro com validação da equipe.
                 </p>
               </div>
             </section>
-          </Link>
+          </a>
 
           {/* CARD: PROFISSIONAL */}
-          <Link
-            href="/cadastro/profissional"
+          <a
+            href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${profissionalMessage}`}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               textDecoration: "none",
             }}
@@ -505,8 +591,7 @@ export default function RootPage() {
                     marginBottom: 4,
                   }}
                 >
-                  Pedreiro, ajudante, pintor, eletricista, encanador e outros
-                  profissionais da obra.
+                  Cadastro inicial validado via WhatsApp do Construthéo.
                 </p>
                 <p
                   style={{
@@ -515,11 +600,11 @@ export default function RootPage() {
                     fontWeight: 500,
                   }}
                 >
-                  Faça parte do ConstruThéo. Realize seu cadastro.
+                  Inicie seu cadastro com validação da equipe.
                 </p>
               </div>
             </section>
-          </Link>
+          </a>
         </div>
       </main>
 
@@ -580,25 +665,15 @@ export default function RootPage() {
                 border: "1px solid #E5E7EB",
                 background: "#F9FAFB",
                 margin: "0 auto 14px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#2563EB",
-                fontWeight: 700,
-                fontSize: "1rem",
               }}
             >
-              {selectedPartner.logo ? (
-                <Image
-                  src={selectedPartner.logo}
-                  alt={selectedPartner.name}
-                  width={74}
-                  height={74}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                selectedPartner.name.charAt(0)
-              )}
+              <Image
+                src={selectedPartner.logo}
+                alt={selectedPartner.name}
+                width={74}
+                height={74}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
             </div>
 
             <h2
@@ -637,7 +712,7 @@ export default function RootPage() {
             </p>
 
             <a
-              href={`https://wa.me/${selectedPartner.whatsapp}?text=${whatsappMessage}`}
+              href={`https://wa.me/${selectedPartner.whatsapp}?text=${budgetMessage}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
