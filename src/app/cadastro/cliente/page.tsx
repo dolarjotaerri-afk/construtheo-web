@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { buscarEnderecoPorCep } from "../../../lib/cepService";
@@ -10,8 +9,6 @@ const steps = ["Dados básicos", "Contato", "Localização"];
 const CONSTRUTHEO_WHATSAPP = "5511988214713";
 
 export default function CadastroClientePage() {
-  const router = useRouter();
-
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
 
@@ -229,7 +226,7 @@ export default function CadastroClientePage() {
         );
       }
 
-      // 5) Abre WhatsApp do ConstruThéo com os dados do cliente
+      // 5) Redireciona para o WhatsApp do ConstruThéo com os dados do cliente
       if (typeof window !== "undefined" && resumoCliente) {
         const mensagemWhatsapp = [
           "Olá, sou novo cliente cadastrado no Construthéo.",
@@ -249,11 +246,9 @@ export default function CadastroClientePage() {
           mensagemWhatsapp
         )}`;
 
-        window.open(linkWhatsapp, "_blank", "noopener,noreferrer");
+        window.location.href = linkWhatsapp;
+        return;
       }
-
-      // 6) Redireciona para o painel do cliente
-      router.push("/painel/cliente");
     } catch (err: any) {
       console.error(err);
       const raw = String(err?.message || "").toLowerCase();
@@ -268,6 +263,7 @@ export default function CadastroClientePage() {
         );
       }
       setLoading(false);
+      return;
     } finally {
       setLoading(false);
     }
