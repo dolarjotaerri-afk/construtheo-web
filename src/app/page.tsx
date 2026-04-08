@@ -529,7 +529,7 @@ export default function RootPage() {
                     marginBottom: 4,
                   }}
                 >
-                  Cadastro inicial validado via WhatsApp do Construthéo.
+                  Apresente sua empresa para clientes que estão construindo na sua região.
                 </p>
                 <p
                   style={{
@@ -591,7 +591,7 @@ export default function RootPage() {
                     marginBottom: 4,
                   }}
                 >
-                  Cadastro inicial validado via WhatsApp do Construthéo.
+                  Mostre seu trabalho para clientes que buscam profissionais na sua região.
                 </p>
                 <p
                   style={{
