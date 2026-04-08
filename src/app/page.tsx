@@ -7,14 +7,15 @@ import SplashScreen from "./SplashScreen";
 
 const featuredPartners = [
   {
-    name: "Depósito",
+    name: "Depósito Formigão",
     category: "Depósito",
-    location: "Igaratá/SP e Região",
+    location: "Igaratá e Região",
     badge: "Parceiro",
-    whatsapp: "5511999999999",
+    logo: "/logos/deposito.png",
+    whatsapp: "5511944674658",
   },
   {
-    name: "Poços Artesianos",
+    name: "Poços Artesianos Furo D'Água",
     category: "Poço artesiano",
     location: "Igaratá/SP e Região",
     badge: "Parceiro",
@@ -45,14 +46,14 @@ const featuredPartners = [
     whatsapp: "5511982081051",
   },
   {
-    name: "Terraplanagem",
+    name: "HB Terraplanagem",
     category: "Terraplanagem",
     location: "Igaratá/SP e Região",
     badge: "Parceiro",
     whatsapp: "5511999999999",
   },
   {
-    name: "Mármores e Granitos",
+    name: "SeB Mármores e Granitos",
     category: "Mármores e Granitos",
     location: "Igaratá/SP e Região",
     badge: "Parceiro",
