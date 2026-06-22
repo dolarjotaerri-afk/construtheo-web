@@ -91,7 +91,7 @@ export default function ProfissoesPage() {
         {/* Botão voltar */}
         <div style={{ marginBottom: "14px" }}>
           <Link
-            href="/login"
+            href="/"
             style={{
               fontSize: "0.78rem",
               color: "#2563EB",

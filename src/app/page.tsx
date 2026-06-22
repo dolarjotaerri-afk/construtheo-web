@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SplashScreen from "./SplashScreen";
@@ -12,7 +12,7 @@ const featuredPartners = [
     name: "Depósito Formigão",
     category: "Depósito",
     location: "Igaratá/SP e Região",
-    badge: "Parceiro",
+    badge: "★ 5.0 Qualidade",
     logo: "/logos/deposito.png",
     whatsapp: "5511944674658",
   },
@@ -20,7 +20,7 @@ const featuredPartners = [
     name: "DSA Energia Solar",
     category: "Energia solar",
     location: "São José dos Campos/SP e Região",
-    badge: "Parceiro",
+    badge: "★ 5.0 Qualidade",
     logo: "/logos/dsa-energia-solar.png",
     whatsapp: "5512997223060",
   },
@@ -28,7 +28,7 @@ const featuredPartners = [
     name: "L.C Caçambas",
     category: "Caçamba",
     location: "Santa Isabel/SP e Região",
-    badge: "Parceiro",
+    badge: "★ 5.0 Qualidade",
     logo: "/logos/lc-cacambas.png",
     whatsapp: "5511998014113",
   },
@@ -36,9 +36,37 @@ const featuredPartners = [
     name: "Vidraçaria Alvarenga",
     category: "Vidraçaria",
     location: "São Paulo/SP e Região",
-    badge: "Parceiro",
+    badge: "★ 5.0 Qualidade",
     logo: "/logos/vidracaria-alvarenga.png",
     whatsapp: "5511982081051",
+  },
+];
+
+const featuredProfessionals = [
+  {
+    title: "Indique um pedreiro",
+    subtitle: "Profissional de confiança para obras, reformas e acabamentos.",
+    tag: "Pedreiro",
+  },
+  {
+    title: "Indique um pintor",
+    subtitle: "Serviço de pintura residencial, comercial e acabamento fino.",
+    tag: "Pintura",
+  },
+  {
+    title: "Indique um eletricista",
+    subtitle: "Instalações, manutenção elétrica e pequenos reparos.",
+    tag: "Elétrica",
+  },
+  {
+    title: "Indique um encanador",
+    subtitle: "Hidráulica, vazamentos, reparos e instalações.",
+    tag: "Hidráulica",
+  },
+  {
+    title: "Indique um gesseiro",
+    subtitle: "Forro, drywall, sancas e acabamento em gesso.",
+    tag: "Gesso",
   },
 ];
 
@@ -49,7 +77,7 @@ export default function RootPage() {
   >(null);
 
   const budgetMessage = useMemo(
-    () => encodeURIComponent("Olá vim através do construthéo"),
+    () => encodeURIComponent("Olá vim através do Construthéo"),
     []
   );
 
@@ -89,8 +117,8 @@ export default function RootPage() {
           minHeight: "100vh",
           display: "flex",
           justifyContent: "center",
-          alignItems: "center",
-          padding: "32px 12px",
+          alignItems: "flex-start",
+          padding: "16px 10px",
           background: "#F3F4F6",
         }}
       >
@@ -99,178 +127,142 @@ export default function RootPage() {
             width: "100%",
             maxWidth: "460px",
             background: "#FFFFFF",
-            borderRadius: "32px",
-            padding: "26px 22px 26px",
-            boxShadow: "0 18px 40px rgba(15, 23, 42, 0.16)",
+            borderRadius: "28px",
+            padding: "22px 18px 20px",
+            boxShadow: "0 18px 40px rgba(15, 23, 42, 0.14)",
             border: "1px solid #E5E7EB",
           }}
         >
-          {/* TOPO / HEADER */}
-          <header
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "14px",
-              marginBottom: "18px",
-            }}
-          >
+          {/* TOPO */}
+          <header style={{ marginBottom: "16px" }}>
             <div
               style={{
-                width: 56,
-                height: 56,
-                borderRadius: "999px",
-                background: "#EFF6FF",
-                border: "1px solid #DBEAFE",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
+                justifyContent: "space-between",
+                gap: "12px",
+                marginBottom: "7px",
               }}
             >
-              <Image
-                src="/mascote-pedreiro.png"
-                alt="Mascote ConstruThéo"
-                width={40}
-                height={40}
-                style={{ objectFit: "contain" }}
-              />
-            </div>
-
-            <div style={{ flex: 1 }}>
               <p
                 style={{
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
+                  fontSize: "0.7rem",
+                  fontWeight: 800,
                   letterSpacing: "0.18em",
                   color: "#2563EB",
                   textTransform: "uppercase",
-                  marginBottom: "6px",
+                  margin: 0,
                 }}
               >
-                Bem-vindo(a)
+                ConstruThéo
               </p>
-
-              <h1
-                style={{
-                  fontSize: "1.25rem",
-                  fontWeight: 700,
-                  color: "#111827",
-                  lineHeight: 1.3,
-                  marginBottom: "4px",
-                }}
-              >
-                Sua obra conectada a{" "}
-                <span style={{ color: "#2563EB" }}>tudo que ela precisa.</span>
-              </h1>
+<Link
+  href="/login"
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "6px 11px",
+    borderRadius: "999px",
+    border: "1px solid #E5E7EB",
+    background: "#F9FAFB",
+    color: "#2563EB",
+    fontSize: "0.68rem",
+    fontWeight: 800,
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+    boxShadow: "0 2px 6px rgba(15, 23, 42, 0.05)",
+  }}
+>
+  Entrar
+</Link>
             </div>
-          </header>
 
-          {/* CHIP: JÁ FAÇO PARTE */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginBottom: "22px",
-            }}
-          >
-            <Link
-              href="/login"
+            <h1
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "7px 14px",
-                borderRadius: "999px",
-                border: "1px solid #E5E7EB",
-                background: "#F9FAFB",
-                fontSize: "0.75rem",
-                color: "#1D4ED8",
-                fontWeight: 500,
-                textDecoration: "none",
-                boxShadow: "0 2px 6px rgba(15, 23, 42, 0.08)",
+                fontSize: "1.34rem",
+                fontWeight: 800,
+                color: "#111827",
+                lineHeight: 1.18,
+                marginBottom: "8px",
+                letterSpacing: "-0.03em",
               }}
             >
-              <span>Já faço parte do ConstruThéo</span>
-              <span>↪</span>
-            </Link>
-          </div>
+              Os melhores da construção civil na sua região.
+            </h1>
 
-          {/* CARROSSEL DE DESTAQUES */}
-          <section
-            style={{
-              marginBottom: "20px",
-              background: "#F8FAFC",
-              border: "1px solid #E5E7EB",
-              borderRadius: "22px",
-              padding: "14px 12px 14px",
-            }}
-          >
             <p
               style={{
                 fontSize: "0.8rem",
-                fontWeight: 700,
-                color: "#111827",
-                marginBottom: "12px",
-                textAlign: "center",
-                letterSpacing: "-0.01em",
+                color: "#6B7280",
+                lineHeight: 1.42,
+                margin: 0,
               }}
             >
-              Melhores Empresas da sua região
+              Encontre profissionais, empresas e fornecedores de confiança para
+              sua obra. Faça parte de uma rede que valoriza quem entrega
+              qualidade.
             </p>
+          </header>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                overflowX: "auto",
-                paddingBottom: "4px",
-                paddingLeft: "2px",
-                paddingRight: "2px",
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
-            >
+          {/* CLIENTE + INDICAÇÃO */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "10px",
+              marginBottom: "18px",
+            }}
+          >
+            <Link href="/cadastro/cliente" style={{ textDecoration: "none" }}>
+              <section style={mainChoiceCardStyle}>
+                <p style={mainChoiceTitleStyle}>Sou cliente</p>
+                <p style={mainChoiceTextStyle}>Obra ou reforma</p>
+              </section>
+            </Link>
+
+            <Link href="/indicar" style={{ textDecoration: "none" }}>
+              <section style={mainChoiceCardStyle}>
+                <p style={mainChoiceTitleStyle}>Indicar Profissional </p>
+                <p style={mainChoiceTextStyle}>ou Empresas</p>
+              </section>
+            </Link>
+          </div>
+
+          {/* BLOCO EMPRESAS */}
+          <section style={sectionBlockStyle}>
+            <div style={sectionHeaderStyle}>
+              <div>
+                <p style={sectionLabelStyle}></p>
+                <h2 style={sectionTitleStyle}>
+                  Empresas em destaque na sua região
+                </h2>
+              </div>
+
+              <a
+                href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${empresaMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={smallActionButtonStyle}
+              >
+                Sou empresa
+              </a>
+            </div>
+
+            <div style={carouselStyle}>
               {featuredPartners.map((partner) => (
                 <button
                   key={partner.name}
                   type="button"
                   onClick={() => setSelectedPartner(partner)}
-                  style={{
-                    minWidth: "142px",
-                    maxWidth: "142px",
-                    flexShrink: 0,
-                    border: "1px solid #E5E7EB",
-                    borderRadius: "20px",
-                    background: "#FFFFFF",
-                    padding: "13px 12px 12px",
-                    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
+                  style={companyCardStyle}
                 >
-                  <div
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: "999px",
-                      background: "linear-gradient(180deg, #EFF6FF, #F8FAFC)",
-                      border: "1px solid #DBEAFE",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#2563EB",
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                      marginBottom: "12px",
-                      boxShadow: "0 2px 8px rgba(37, 99, 235, 0.08)",
-                      overflow: "hidden",
-                    }}
-                  >
+                  <div style={logoCircleStyle}>
                     <Image
                       src={partner.logo}
                       alt={partner.name}
-                      width={42}
-                      height={42}
+                      width={40}
+                      height={40}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -279,332 +271,76 @@ export default function RootPage() {
                     />
                   </div>
 
-                  <p
-                    style={{
-                      fontSize: "0.79rem",
-                      fontWeight: 700,
-                      color: "#111827",
-                      lineHeight: 1.25,
-                      marginBottom: "5px",
-                      minHeight: "32px",
-                    }}
-                  >
-                    {partner.name}
-                  </p>
+                  <p style={companyNameStyle}>{partner.name}</p>
 
-                  <p
-                    style={{
-                      fontSize: "0.72rem",
-                      color: "#6B7280",
-                      marginBottom: "10px",
-                      lineHeight: 1.3,
-                      minHeight: "32px",
-                    }}
-                  >
-                    {partner.location}
-                  </p>
+                  <p style={companyLocationStyle}>{partner.location}</p>
 
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "4px 9px",
-                      borderRadius: "999px",
-                      background:
-                        partner.badge === "Destaque" ? "#DBEAFE" : "#EEF2FF",
-                      color: "#1D4ED8",
-                      fontSize: "0.67rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.01em",
-                      boxShadow: "inset 0 0 0 1px rgba(37, 99, 235, 0.08)",
-                    }}
-                  >
-                    {partner.badge}
-                  </span>
+                  <span style={tagStyle}>{partner.badge}</span>
                 </button>
               ))}
 
-              {/* CARD ADICIONE SUA EMPRESA */}
               <a
                 href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${adicionarEmpresaMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  minWidth: "142px",
-                  maxWidth: "142px",
-                  flexShrink: 0,
+                  ...companyCardStyle,
                   border: "1px dashed #93C5FD",
-                  borderRadius: "20px",
-                  background: "#FFFFFF",
-                  padding: "13px 12px 12px",
-                  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.04)",
-                  textAlign: "left",
                   textDecoration: "none",
                 }}
               >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "999px",
-                    background: "#EFF6FF",
-                    border: "1px solid #BFDBFE",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#2563EB",
-                    fontWeight: 700,
-                    fontSize: "1.15rem",
-                    marginBottom: "12px",
-                    boxShadow: "0 2px 8px rgba(37, 99, 235, 0.06)",
-                  }}
-                >
-                  +
-                </div>
+                <div style={plusCircleStyle}>+</div>
 
-                <p
-                  style={{
-                    fontSize: "0.79rem",
-                    fontWeight: 700,
-                    color: "#111827",
-                    lineHeight: 1.25,
-                    marginBottom: "5px",
-                    minHeight: "32px",
-                  }}
-                >
-                  Adicione sua empresa
+                <p style={companyNameStyle}>Adicione sua empresa</p>
+
+                <p style={companyLocationStyle}>
+                  Depósito, vidraçaria, caçamba e mais
                 </p>
 
-                <p
-                  style={{
-                    fontSize: "0.72rem",
-                    color: "#6B7280",
-                    marginBottom: "10px",
-                    lineHeight: 1.3,
-                    minHeight: "32px",
-                  }}
-                >
-                  Depósito, serralheria, vidraçaria, caçamba e mais
-                </p>
-
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4px 9px",
-                    borderRadius: "999px",
-                    background: "#EFF6FF",
-                    color: "#1D4ED8",
-                    fontSize: "0.67rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.01em",
-                    boxShadow: "inset 0 0 0 1px rgba(37, 99, 235, 0.08)",
-                  }}
-                >
-                  Novo parceiro
-                </span>
+                <span style={tagStyle}>Novo parceiro</span>
               </a>
             </div>
           </section>
 
-          {/* FRASE CENTRALIZADA */}
-          <p
-            style={{
-              fontSize: "0.78rem",
-              color: "#4B5563",
-              marginBottom: "12px",
-              textAlign: "center",
-            }}
-          >
-            Escolha abaixo o tipo de acesso que representa você:
-          </p>
+          {/* BLOCO PRESTADORES */}
+          <section style={sectionBlockStyle}>
+            <div style={sectionHeaderStyle}>
+              <div>
+                <p style={sectionLabelStyle}></p>
+                <h2 style={sectionTitleStyle}>
+                  Profissionais em Destaque na Região
+                </h2>
+              </div>
 
-          {/* CARD: CLIENTE */}
-          <Link
-            href="/cadastro/cliente"
-            style={{
-              textDecoration: "none",
-            }}
-          >
-            <section
-              style={{
-                borderRadius: "20px",
-                border: "1px solid #E5E7EB",
-                padding: "12px 14px",
-                marginBottom: "10px",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                background: "#FFFFFF",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "1.1rem",
-                }}
+              <a
+                href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${profissionalMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={smallActionButtonStyle}
               >
-                🏡
-              </div>
+                Sou Profissional
+              </a>
+            </div>
 
-              <div style={{ flex: 1 }}>
-                <p
+            <div style={carouselStyle}>
+              {featuredProfessionals.map((item) => (
+                <Link
+                  key={item.title}
+                  href="/indicar"
                   style={{
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    color: "#111827",
-                    marginBottom: 2,
+                    ...professionalCardStyle,
+                    textDecoration: "none",
                   }}
                 >
-                  Sou Cliente
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "#6B7280",
-                    marginBottom: 4,
-                  }}
-                >
-                  Quero organizar minha obra e encontrar bons profissionais e
-                  serviços.
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#2563EB",
-                    fontWeight: 500,
-                  }}
-                >
-                  Faça parte do ConstruThéo. Realize seu cadastro.
-                </p>
-              </div>
-            </section>
-          </Link>
+                  <p style={professionalTitleStyle}>{item.title}</p>
 
-          {/* CARD: EMPRESA */}
-          <a
-            href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${empresaMessage}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: "none",
-            }}
-          >
-            <section
-              style={{
-                borderRadius: "20px",
-                border: "1px solid #E5E7EB",
-                padding: "12px 14px",
-                marginBottom: "10px",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                background: "#FFFFFF",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "1.1rem",
-                }}
-              >
-                🏢
-              </div>
+                  <p style={professionalTextStyle}>{item.subtitle}</p>
 
-              <div style={{ flex: 1 }}>
-                <p
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    color: "#111827",
-                    marginBottom: 2,
-                  }}
-                >
-                  Sou Empresa
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "#6B7280",
-                    marginBottom: 4,
-                  }}
-                >
-                  Apresente sua empresa para clientes que estão construindo na sua região.
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#2563EB",
-                    fontWeight: 500,
-                  }}
-                >
-                  Inicie seu cadastro com validação da equipe.
-                </p>
-              </div>
-            </section>
-          </a>
-
-          {/* CARD: PROFISSIONAL */}
-          <a
-            href={`https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${profissionalMessage}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              textDecoration: "none",
-            }}
-          >
-            <section
-              style={{
-                borderRadius: "20px",
-                border: "1px solid #E5E7EB",
-                padding: "12px 14px",
-                marginBottom: "14px",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                background: "#FFFFFF",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "1.1rem",
-                }}
-              >
-                👷‍♂️
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <p
-                  style={{
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    color: "#111827",
-                    marginBottom: 2,
-                  }}
-                >
-                  Sou Profissional da Construção
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.78rem",
-                    color: "#6B7280",
-                    marginBottom: 4,
-                  }}
-                >
-                  Mostre seu trabalho para clientes que buscam profissionais na sua região.
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#2563EB",
-                    fontWeight: 500,
-                  }}
-                >
-                  Inicie seu cadastro com validação da equipe.
-                </p>
-              </div>
-            </section>
-          </a>
+                  <span style={tagStyle}>{item.tag}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
         </div>
       </main>
 
@@ -652,7 +388,7 @@ export default function RootPage() {
                   cursor: "pointer",
                 }}
               >
-                ✕
+                ×
               </button>
             </div>
 
@@ -679,7 +415,7 @@ export default function RootPage() {
             <h2
               style={{
                 fontSize: "1rem",
-                fontWeight: 700,
+                fontWeight: 800,
                 color: "#111827",
                 textAlign: "center",
                 marginBottom: "6px",
@@ -725,7 +461,7 @@ export default function RootPage() {
                 background: "#2563EB",
                 color: "#FFFFFF",
                 fontSize: "0.84rem",
-                fontWeight: 700,
+                fontWeight: 800,
                 textDecoration: "none",
                 boxShadow: "0 8px 16px rgba(37, 99, 235, 0.22)",
               }}
@@ -738,3 +474,184 @@ export default function RootPage() {
     </>
   );
 }
+
+const mainChoiceCardStyle: CSSProperties = {
+  minHeight: 76,
+  borderRadius: "18px",
+  border: "1px solid #E5E7EB",
+  background: "#FFFFFF",
+  padding: "14px 13px",
+  boxShadow: "0 5px 14px rgba(15, 23, 42, 0.05)",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+};
+
+const mainChoiceTitleStyle: CSSProperties = {
+  fontSize: "0.9rem",
+  fontWeight: 800,
+  color: "#111827",
+  marginBottom: 4,
+};
+
+const mainChoiceTextStyle: CSSProperties = {
+  fontSize: "0.72rem",
+  color: "#2563EB",
+  fontWeight: 700,
+  lineHeight: 1.25,
+};
+
+const sectionBlockStyle: CSSProperties = {
+  background: "#F8FAFC",
+  border: "1px solid #E5E7EB",
+  borderRadius: "22px",
+  padding: "13px 12px 14px",
+  marginBottom: "14px",
+};
+
+const sectionHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+  marginBottom: "12px",
+};
+
+const sectionLabelStyle: CSSProperties = {
+  fontSize: "0.66rem",
+  fontWeight: 800,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "#2563EB",
+  marginBottom: 3,
+};
+
+const sectionTitleStyle: CSSProperties = {
+  fontSize: "0.84rem",
+  fontWeight: 800,
+  color: "#111827",
+  lineHeight: 1.25,
+};
+
+const smallActionButtonStyle: CSSProperties = {
+  minWidth: "94px",
+  textAlign: "center",
+  borderRadius: "999px",
+  padding: "8px 10px",
+  background: "#2563EB",
+  color: "#FFFFFF",
+  fontSize: "0.68rem",
+  fontWeight: 800,
+  textDecoration: "none",
+  boxShadow: "0 6px 14px rgba(37, 99, 235, 0.2)",
+};
+
+const carouselStyle: CSSProperties = {
+  display: "flex",
+  gap: "12px",
+  overflowX: "auto",
+  paddingBottom: "4px",
+  paddingLeft: "2px",
+  paddingRight: "2px",
+  scrollbarWidth: "none",
+  msOverflowStyle: "none",
+};
+
+const companyCardStyle: CSSProperties = {
+  minWidth: "136px",
+  maxWidth: "136px",
+  flexShrink: 0,
+  border: "1px solid #E5E7EB",
+  borderRadius: "18px",
+  background: "#FFFFFF",
+  padding: "12px 11px",
+  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const logoCircleStyle: CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: "999px",
+  background: "linear-gradient(180deg, #EFF6FF, #F8FAFC)",
+  border: "1px solid #DBEAFE",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: "10px",
+  overflow: "hidden",
+};
+
+const plusCircleStyle: CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: "999px",
+  background: "#EFF6FF",
+  border: "1px solid #BFDBFE",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#2563EB",
+  fontWeight: 800,
+  fontSize: "1.1rem",
+  marginBottom: "10px",
+};
+
+const companyNameStyle: CSSProperties = {
+  fontSize: "0.76rem",
+  fontWeight: 800,
+  color: "#111827",
+  lineHeight: 1.25,
+  marginBottom: "5px",
+  minHeight: "30px",
+};
+
+const companyLocationStyle: CSSProperties = {
+  fontSize: "0.7rem",
+  color: "#6B7280",
+  marginBottom: "9px",
+  lineHeight: 1.25,
+  minHeight: "30px",
+};
+
+const professionalCardStyle: CSSProperties = {
+  minWidth: "150px",
+  maxWidth: "150px",
+  flexShrink: 0,
+  border: "1px solid #E5E7EB",
+  borderRadius: "18px",
+  background: "#FFFFFF",
+  padding: "13px 12px",
+  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
+};
+
+const professionalTitleStyle: CSSProperties = {
+  fontSize: "0.78rem",
+  fontWeight: 800,
+  color: "#111827",
+  lineHeight: 1.25,
+  marginBottom: "6px",
+};
+
+const professionalTextStyle: CSSProperties = {
+  fontSize: "0.7rem",
+  color: "#6B7280",
+  marginBottom: "10px",
+  lineHeight: 1.3,
+  minHeight: "46px",
+};
+
+const tagStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "4px 8px",
+  borderRadius: "999px",
+  background: "#FFFCF5",
+  color: "#B7791F",
+  fontSize: "0.62rem",
+  fontWeight: 800,
+  whiteSpace: "nowrap",
+  border: "1px solid #F1E4C3",
+};
