@@ -40,7 +40,7 @@ export default function SplashScreen() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(180deg, #e0f2ff, #b3e0ff)",
+        background: "linear-gradient(180deg, #0f172a, #1e3a5f)",
       }}
     >
       <div
@@ -49,7 +49,7 @@ export default function SplashScreen() {
           maxWidth: 360,
           backgroundColor: "#ffffff",
           borderRadius: 24,
-          boxShadow: "0 20px 40px rgba(15, 23, 42, 0.18)",
+          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.35)",
           padding: 24,
           display: "flex",
           flexDirection: "column",
@@ -97,7 +97,7 @@ export default function SplashScreen() {
             marginBottom: 16,
           }}
         >
-          O Aplicativo completo para sua obra!
+          Sua obra conectada a quem faz acontecer.
         </p>
 
         <p
@@ -106,7 +106,7 @@ export default function SplashScreen() {
             color: "#94a3b8",
           }}
         >
-          Carregando seu painel de construção...
+          Carregando sua experiência na construção civil...
         </p>
       </div>
     </main>
