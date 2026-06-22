@@ -24,6 +24,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     const interval = setInterval(() => {
       setMascotIndex((prev) => (prev + 1) % mascots.length);
     }, 800);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -44,7 +45,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(180deg, #0f172a, #1e3a5f)",
+        background: "linear-gradient(180deg, #cfe8ff, #3b82b8)",
       }}
     >
       <div
@@ -53,7 +54,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           maxWidth: 360,
           backgroundColor: "#ffffff",
           borderRadius: 24,
-          boxShadow: "0 20px 40px rgba(15, 23, 42, 0.18)",
+          boxShadow: "0 22px 45px rgba(15, 23, 42, 0.22)",
           padding: 24,
           display: "flex",
           flexDirection: "column",
