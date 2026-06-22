@@ -44,7 +44,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(180deg, #e0f2ff, #b3e0ff)",
+        background: "linear-gradient(180deg, #0f172a, #1e3a5f)",
       }}
     >
       <div
