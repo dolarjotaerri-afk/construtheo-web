@@ -11,37 +11,37 @@ const tipoLabels: Record<string, string> = {
   profissional: "Profissional da Construção",
 };
 
+type TipoUsuario = "cliente" | "empresa" | "profissional";
+
 export default function LoginPage() {
-const router = useRouter();
+  const router = useRouter();
 
-// estado para o tipo de usuário
-const [tipo, setTipo] = useState<"cliente" | "empresa" | "profissional">("cliente");
-
-// lê o ?tipo=... da URL só no browser
-useEffect(() => {
-  if (typeof window === "undefined") return;
-
-  const params = new URLSearchParams(window.location.search);
-  const t = params.get("tipo");
-
-  if (t === "cliente" || t === "empresa" || t === "profissional") {
-    setTipo(t);
-  }
-}, []);
-
-
+  const [tipo, setTipo] = useState<TipoUsuario>("cliente");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const t = params.get("tipo");
+
+    if (t === "cliente" || t === "empresa" || t === "profissional") {
+      setTipo(t);
+    }
+  }, []);
+
   const labelTipo = tipoLabels[tipo] || "Cliente";
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMensagem(null);
 
-    if (!email || !senha) {
+    const emailTratado = email.trim().toLowerCase();
+
+    if (!emailTratado || !senha) {
       setMensagem("Preencha e-mail e senha.");
       return;
     }
@@ -49,37 +49,63 @@ useEffect(() => {
     setLoading(true);
 
     try {
-      if (tipo === "cliente") {
-        // LOGIN CLIENTE: tabela "clientes" (email + senha em texto simples)
-        const { data, error } = await supabase
+      const { data: loginData, error: loginError } =
+        await supabase.auth.signInWithPassword({
+          email: emailTratado,
+          password: senha,
+        });
+
+      if (loginError || !loginData.user) {
+        console.error("Erro Supabase Auth:", loginError);
+        setMensagem("E-mail ou senha inválidos.");
+        return;
+      }
+
+      const user = loginData.user;
+
+      const tipoUsuario =
+        (user.user_metadata?.tipo_usuario as TipoUsuario | undefined) || tipo;
+
+      if (tipoUsuario === "cliente") {
+        const { data: clienteData, error: clienteError } = await supabase
           .from("clientes")
           .select("*")
-          .eq("email", email)
-          .eq("senha", senha)
-          .single();
+          .eq("email", emailTratado)
+          .maybeSingle();
 
-        if (error || !data) {
-          setMensagem("E-mail ou senha inválidos.");
-          return;
+        if (clienteError) {
+          console.error("Erro ao buscar cliente:", clienteError);
         }
 
-        // Salva dados mínimos no localStorage pro painel do cliente
+        const nomeCliente =
+          clienteData?.nome ||
+          user.user_metadata?.nome ||
+          emailTratado.split("@")[0];
+
+        const clienteAtual = {
+          nome: nomeCliente,
+          apelido: clienteData?.apelido || nomeCliente,
+          email: clienteData?.email || emailTratado,
+          whatsapp: clienteData?.whatsapp || "",
+          cidade: clienteData?.cidade || "",
+          estado: clienteData?.estado || "",
+          bairro: clienteData?.bairro || "",
+          localizacao:
+            clienteData?.cidade && clienteData?.estado
+              ? `${clienteData.cidade} - ${clienteData.estado}`
+              : clienteData?.cidade || "Localização não informada",
+          criadoEm: clienteData?.created_at || user.created_at,
+        };
+
         if (typeof window !== "undefined") {
-          const demoCliente = {
-            nome: data.nome,
-            apelido: data.apelido ?? data.nome,
-            email: data.email,
-            whatsapp: data.whatsapp,
-            cidade: data.cidade,
-            estado: data.estado,
-            bairro: data.bairro,
-            localizacao: `${data.cidade} - ${data.estado}`,
-            criadoEm: data.created_at,
-          };
+          localStorage.setItem(
+            "construtheo_cliente_atual",
+            JSON.stringify(clienteAtual)
+          );
 
           localStorage.setItem(
             "construtheo_demo_cliente",
-            JSON.stringify(demoCliente)
+            JSON.stringify(clienteAtual)
           );
         }
 
@@ -87,38 +113,77 @@ useEffect(() => {
         return;
       }
 
-      if (tipo === "profissional") {
-        // LOGIN PROFISSIONAL (ainda sem senha na tabela, então só confere e-mail)
-        const { data, error } = await supabase
-          .from("profissionais")
-          .select("*")
-          .eq("email", email)
-          .single();
+      if (tipoUsuario === "profissional") {
+        const { data: profissionalData, error: profissionalError } =
+          await supabase
+            .from("profissionais")
+            .select("*")
+            .eq("email", emailTratado)
+            .maybeSingle();
 
-        if (error || !data) {
+        if (profissionalError) {
+          console.error("Erro ao buscar profissional:", profissionalError);
+        }
+
+        if (!profissionalData) {
           setMensagem(
-            "Profissional não encontrado. Cadastre-se como profissional."
+            "Seu cadastro profissional está em análise ou ainda não foi localizado pela equipe ConstruThéo."
           );
           return;
         }
 
-        // Redireciona para o painel do profissional (id + apelido na URL)
-        const apelido = data.apelido || data.nome || "profissional";
+        const status = profissionalData.status || profissionalData.situacao;
+
+        if (status && status !== "aprovado") {
+          setMensagem(
+            "Seu cadastro profissional ainda está em análise pela equipe ConstruThéo."
+          );
+          return;
+        }
+
+        const apelido =
+          profissionalData.apelido || profissionalData.nome || "profissional";
 
         router.push(
           `/painel/profissional?id=${encodeURIComponent(
-            data.id
+            profissionalData.id
           )}&apelido=${encodeURIComponent(apelido)}`
         );
         return;
       }
 
-      if (tipo === "empresa") {
-        // Por enquanto, só direciona para cadastro de empresa
-        setMensagem("Login de empresa ainda em configuração. Faça seu cadastro.");
-        router.push("/cadastro/empresa");
+      if (tipoUsuario === "empresa") {
+        const { data: empresaData, error: empresaError } = await supabase
+          .from("empresas")
+          .select("*")
+          .eq("email", emailTratado)
+          .maybeSingle();
+
+        if (empresaError) {
+          console.error("Erro ao buscar empresa:", empresaError);
+        }
+
+        if (!empresaData) {
+          setMensagem(
+            "Seu cadastro de empresa está em análise ou ainda não foi localizado pela equipe ConstruThéo."
+          );
+          return;
+        }
+
+        const status = empresaData.status || empresaData.situacao;
+
+        if (status && status !== "aprovado") {
+          setMensagem(
+            "Seu cadastro de empresa ainda está em análise pela equipe ConstruThéo."
+          );
+          return;
+        }
+
+        router.push("/painel/empresa");
         return;
       }
+
+      router.push("/painel/cliente");
     } catch (err) {
       console.error("Erro no login:", err);
       setMensagem("Erro ao tentar acessar sua conta. Tente novamente.");
@@ -149,7 +214,6 @@ useEffect(() => {
           boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
         }}
       >
-        {/* VOLTAR PRA HOME */}
         <div style={{ marginBottom: "12px" }}>
           <Link
             href="/"
@@ -157,22 +221,24 @@ useEffect(() => {
               fontSize: "0.75rem",
               color: "#2563EB",
               textDecoration: "none",
+              fontWeight: 600,
             }}
           >
-            ← Voltar para escolher o tipo de acesso
+            ← Voltar para a página inicial
           </Link>
         </div>
 
-<h1
-  style={{
-    fontSize: "1.3rem",
-    fontWeight: 700,
-    marginBottom: "4px",
-    color: "#111827",
-  }}
->
-  Acessar minha conta
-</h1>
+        <h1
+          style={{
+            fontSize: "1.3rem",
+            fontWeight: 700,
+            marginBottom: "4px",
+            color: "#111827",
+          }}
+        >
+          Acessar minha conta
+        </h1>
+
         <p
           style={{
             fontSize: "0.8rem",
@@ -180,7 +246,8 @@ useEffect(() => {
             marginBottom: "16px",
           }}
         >
-          Acesse sua conta com e-mail e senha cadastrados.
+          Entre como {labelTipo.toLowerCase()} usando o e-mail e senha
+          cadastrados.
         </p>
 
         {mensagem && (
@@ -214,6 +281,7 @@ useEffect(() => {
             >
               E-mail
             </label>
+
             <input
               id="email"
               type="email"
@@ -244,6 +312,7 @@ useEffect(() => {
             >
               Senha
             </label>
+
             <input
               id="senha"
               type="password"
@@ -283,7 +352,6 @@ useEffect(() => {
           </button>
         </form>
 
-        {/* Links de cadastro */}
         <p
           style={{
             marginTop: "10px",

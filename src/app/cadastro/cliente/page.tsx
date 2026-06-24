@@ -291,7 +291,7 @@ export default function CadastroClientePage() {
         {/* VOLTAR */}
         <div style={{ textAlign: "center", marginBottom: "18px" }}>
           <Link
-            href="/login"
+            href="/"
             style={{
               display: "inline-flex",
               alignItems: "center",

@@ -129,7 +129,7 @@ export default function EscolhaTipoEmpresaPage() {
         {/* VOLTAR */}
         <div style={{ textAlign: "center" }}>
           <Link
-            href="/login"
+            href="/"
             style={{
               display: "inline-flex",
               alignItems: "center",
