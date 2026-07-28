@@ -494,146 +494,164 @@ export default function RootPage() {
       )}
 
       <style jsx global>{`
-        .home-page {
-          transition: padding 0.2s ease;
-        }
+  .home-page {
+    transition: padding 0.2s ease;
+  }
 
-        .home-shell {
-          transition:
-            max-width 0.25s ease,
-            padding 0.25s ease;
-        }
+  .home-shell {
+    transition:
+      max-width 0.25s ease,
+      padding 0.25s ease;
+  }
 
-        .home-main-choice-link {
-          display: block;
-        }
+  .home-main-choice-link {
+    display: block;
+  }
 
-        .home-company-card,
-        .home-professional-card {
-          transition:
-            transform 0.18s ease,
-            box-shadow 0.18s ease,
-            border-color 0.18s ease;
-        }
+  .home-company-card,
+  .home-professional-card {
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      border-color 0.18s ease;
+  }
 
-        @media (hover: hover) {
-          .home-company-card:hover,
-          .home-professional-card:hover,
-          .home-main-choice-link:hover section {
-            transform: translateY(-2px);
-            border-color: #bfdbfe !important;
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.09) !important;
-          }
-        }
+  @media (hover: hover) {
+    .home-company-card:hover,
+    .home-professional-card:hover,
+    .home-main-choice-link:hover section {
+      transform: translateY(-2px);
+      border-color: #bfdbfe !important;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.09) !important;
+    }
+  }
 
-        @media (min-width: 768px) {
-          .home-page {
-            padding: 28px 20px !important;
-          }
+  @media (min-width: 768px) {
+    .home-page {
+      padding: 28px 20px !important;
+    }
 
-          .home-shell {
-            max-width: 780px !important;
-            padding: 30px 28px 26px !important;
-          }
+    .home-shell {
+      max-width: 780px !important;
+      padding: 30px 28px 26px !important;
+    }
 
-          .home-header {
-            margin-bottom: 22px !important;
-          }
+    .home-header {
+      margin-bottom: 22px !important;
+    }
 
-          .home-title {
-            max-width: 620px;
-            font-size: 1.8rem !important;
-          }
+    .home-title {
+      max-width: 620px;
+      font-size: 1.9rem !important;
+    }
 
-          .home-description {
-            max-width: 650px;
-            font-size: 0.92rem !important;
-          }
+    .home-description {
+      max-width: 650px;
+      font-size: 0.92rem !important;
+    }
 
-          .home-main-choices {
-            gap: 16px !important;
-            margin-bottom: 22px !important;
-          }
+    .home-main-choices {
+      gap: 16px !important;
+      margin-bottom: 22px !important;
+    }
 
-          .home-section {
-            padding: 18px !important;
-            margin-bottom: 18px !important;
-          }
+    .home-main-choice-link section {
+      min-height: 96px !important;
+      padding: 18px !important;
+    }
 
-          .home-carousel {
-            display: grid !important;
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            overflow: visible !important;
-            gap: 14px !important;
-          }
+    .home-section {
+      padding: 18px !important;
+      margin-bottom: 18px !important;
+    }
 
-          .home-company-card,
-          .home-professional-card {
-            min-width: 0 !important;
-            max-width: none !important;
-            width: 100% !important;
-          }
-        }
+    .home-carousel {
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      overflow: visible !important;
+      gap: 14px !important;
+    }
 
-        @media (min-width: 1100px) {
-          .home-page {
-            padding: 40px 28px !important;
-          }
+    .home-company-card,
+    .home-professional-card {
+      min-width: 0 !important;
+      max-width: none !important;
+      width: 100% !important;
+      min-height: 180px !important;
+    }
+  }
 
-          .home-shell {
-            max-width: 1180px !important;
-            padding: 36px 34px 30px !important;
-            border-radius: 32px !important;
-          }
+  @media (min-width: 1100px) {
+    .home-page {
+      padding: 40px 28px !important;
+    }
 
-          .home-header {
-            margin-bottom: 26px !important;
-          }
+    .home-shell {
+      max-width: 1180px !important;
+      padding: 38px 36px 32px !important;
+      border-radius: 32px !important;
+    }
 
-          .home-title {
-            max-width: 760px;
-            font-size: 2.15rem !important;
-          }
+    .home-header {
+      margin-bottom: 28px !important;
+    }
 
-          .home-description {
-            max-width: 760px;
-            font-size: 1rem !important;
-          }
+    .home-title {
+      max-width: 720px;
+      font-size: 2.3rem !important;
+      line-height: 1.08 !important;
+    }
 
-          .home-main-choices {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 18px !important;
-            margin-bottom: 26px !important;
-          }
+    .home-description {
+      max-width: 760px;
+      font-size: 1rem !important;
+    }
 
-          .home-main-choice-link section {
-            min-height: 104px !important;
-            padding: 20px !important;
-          }
+    .home-main-choices {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 18px !important;
+      margin-bottom: 28px !important;
+    }
 
-          .home-section {
-            padding: 22px !important;
-            border-radius: 26px !important;
-          }
+    .home-main-choice-link section {
+      min-height: 118px !important;
+      padding: 22px !important;
+    }
 
-          .home-carousel {
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            gap: 16px !important;
-          }
+    .home-section {
+      padding: 24px !important;
+      border-radius: 26px !important;
+    }
 
-          .home-company-card,
-          .home-professional-card {
-            min-height: 170px !important;
-            padding: 16px !important;
-          }
-        }
+    .home-carousel {
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      gap: 16px !important;
+    }
 
-        @media (max-width: 420px) {
-          .home-main-choices {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-      `}</style>
+    .home-company-card,
+    .home-professional-card {
+      min-height: 190px !important;
+      padding: 18px !important;
+    }
+
+    .home-shell a[href="/login"] {
+      padding: 8px 14px !important;
+      font-size: 0.75rem !important;
+    }
+
+    .home-section > div:first-child a {
+      min-width: 110px !important;
+      padding: 10px 14px !important;
+      font-size: 0.74rem !important;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .home-main-choices {
+      grid-template-columns: 1fr 1fr !important;
+    }
+  }
+`}</style>
     </>
   );
 }
