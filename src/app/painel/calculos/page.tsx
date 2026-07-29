@@ -6,6 +6,12 @@ import { useEffect, useState } from "react";
 
 import CalculadoraBlocos from "../../../components/calculos/CalculadoraBlocos";
 import CalculadoraConcreto from "../../../components/calculos/CalculadoraConcreto";
+import CalculadoraArgamassa from "../../../components/calculos/CalculadoraArgamassa";
+import CalculadoraAgregados from "../../../components/calculos/CalculadoraAgregados";
+import CalculadoraTinta from "../../../components/calculos/CalculadoraTinta";
+import CalculadoraVidros from "../../../components/calculos/CalculadoraVidros";
+import CalculadoraFiacao from "../../../components/calculos/CalculadoraFiacao";
+import CalculadoraEncanamento from "../../../components/calculos/CalculadoraEncanamento";
 
 type CalcItem = {
   nome: string;
@@ -48,6 +54,7 @@ export default function PainelCalculosPage() {
       router.replace("/login");
       return;
     }
+    
 
     setVerificandoAcesso(false);
   }, [router]);
@@ -207,12 +214,64 @@ export default function PainelCalculosPage() {
     if (rota === "/calc/blocos") {
       setCalculadoraAberta("blocos");
     }
+if (rota === "/calc/agregados") {
+  setCalculadoraAberta("agregados");
+  return;
+}
+if (rota === "/calc/vidros") {
+  setCalculadoraAberta("vidros");
+  return;
+}
+if (rota === "/calc/fiacao") {
+  setCalculadoraAberta("fiacao");
+  return;
+}
+if (rota === "/calc/encanamento") {
+  setCalculadoraAberta("encanamento");
+  return;
+}
+if (calculadoraAberta === "tinta") {
+  return (
+    <CalculadoraTinta
+      onVoltar={voltarParaLista}
+    />
+  );
+}
 
+if (calculadoraAberta === "vidros") {
+  return (
+    <CalculadoraVidros
+      onVoltar={voltarParaLista}
+    />
+  );
+}
+if (calculadoraAberta === "vidros") {
+  return (
+    <CalculadoraVidros
+      onVoltar={voltarParaLista}
+    />
+  );
+}
+if (calculadoraAberta === "fiacao") {
+  return (
+    <CalculadoraFiacao
+      onVoltar={voltarParaLista}
+    />
+  );
+}
+if (calculadoraAberta === "encanamento") {
+  return (
+    <CalculadoraEncanamento
+      onVoltar={voltarParaLista}
+    />
+  );
+}
     window.scrollTo({
       top: 0,
       behavior: "smooth",
     });
   }
+  
 
   function voltarParaLista() {
     setCalculadoraAberta(null);
@@ -242,6 +301,20 @@ export default function PainelCalculosPage() {
       />
     );
   }
+  if (calculadoraAberta === "argamassa") {
+  return (
+    <CalculadoraArgamassa
+      onVoltar={voltarParaLista}
+    />
+  );
+}
+if (calculadoraAberta === "agregados") {
+  return (
+    <CalculadoraAgregados
+      onVoltar={voltarParaLista}
+    />
+  );
+}
 
   return (
     <main
