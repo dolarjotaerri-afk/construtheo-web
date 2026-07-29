@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import CalculadoraConcreto from "../../../components/calculos/CalculadoraConcreto";
+
 type CalcItem = {
   nome: string;
   rota: string;
@@ -12,32 +14,46 @@ type CalcItem = {
 export default function PainelCalculosPage() {
   const router = useRouter();
 
-  // estado para o tipo da operação (cliente/profissional) vindo da URL
+  // Tipo de usuário vindo da URL
   const [tipo, setTipo] = useState<string | null>(null);
 
-  // controle de autorização
+  // Controle de autorização
   const [verificandoAcesso, setVerificandoAcesso] = useState(true);
 
-  // lê ?tipo= da URL no browser
+  // Calculadora aberta dentro do próprio painel
+  const [calculadoraAberta, setCalculadoraAberta] = useState<string | null>(
+    null
+  );
+
+  // Índice do carrossel PRO
+  const [index, setIndex] = useState(0);
+
+  // Lê ?tipo= da URL no navegador
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
     const tipoParam = params.get("tipo");
 
-    if (tipoParam) setTipo(tipoParam);
+    if (tipoParam) {
+      setTipo(tipoParam);
+    }
   }, []);
 
-  // ---------- GUARD DE ACESSO ----------
+  // Guard de acesso
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const profStr = localStorage.getItem("construtheo_profissional_atual");
-    const clienteStr = localStorage.getItem("construtheo_cliente_atual");
+    const profStr = localStorage.getItem(
+      "construtheo_profissional_atual"
+    );
 
-    // só entra se tiver cliente OU profissional
+    const clienteStr = localStorage.getItem(
+      "construtheo_cliente_atual"
+    );
+
+    // Só entra se tiver cliente ou profissional salvo
     if (!profStr && !clienteStr) {
-      // ninguém logado -> manda pra login
       router.replace("/login");
       return;
     }
@@ -45,25 +61,50 @@ export default function PainelCalculosPage() {
     setVerificandoAcesso(false);
   }, [router]);
 
-  // lista de cálculos básicos (gratuitos)
+  // Cálculos básicos gratuitos
   const calculosGratis: CalcItem[] = [
-    { nome: "Calcular Concreto", rota: "/calc/concreto" },
-    { nome: "Calcular Blocos", rota: "/calc/blocos" },
-    { nome: "Calcular Cimento / Argamassa", rota: "/calc/argamassa" },
-    { nome: "Calcular Areia e Brita", rota: "/calc/agregados" },
-    { nome: "Calcular Vidros", rota: "/calc/vidros" },
-    { nome: "Calcular Tinta", rota: "/calc/tinta" },
-    { nome: "Calcular Fiação", rota: "/calc/fiacao" },
-    { nome: "Calcular Encanamento", rota: "/calc/encanamento" },
+    {
+      nome: "Calcular Concreto",
+      rota: "/calc/concreto",
+    },
+    {
+      nome: "Calcular Blocos",
+      rota: "/calc/blocos",
+    },
+    {
+      nome: "Calcular Cimento / Argamassa",
+      rota: "/calc/argamassa",
+    },
+    {
+      nome: "Calcular Areia e Brita",
+      rota: "/calc/agregados",
+    },
+    {
+      nome: "Calcular Vidros",
+      rota: "/calc/vidros",
+    },
+    {
+      nome: "Calcular Tinta",
+      rota: "/calc/tinta",
+    },
+    {
+      nome: "Calcular Fiação",
+      rota: "/calc/fiacao",
+    },
+    {
+      nome: "Calcular Encanamento",
+      rota: "/calc/encanamento",
+    },
   ];
 
-  // Separar em páginas de 4 itens (carrossel)
+  // Separa em páginas de quatro itens
   const paginas: CalcItem[][] = [];
+
   for (let i = 0; i < calculosGratis.length; i += 4) {
     paginas.push(calculosGratis.slice(i, i + 4));
   }
 
-  // carrossel PRO
+  // Carrossel PRO
   const calculosProCarrossel = [
     "Calcular Ferro / Aço",
     "Calcular Formas",
@@ -80,43 +121,54 @@ export default function PainelCalculosPage() {
     "Drywall",
   ];
 
-  const [index, setIndex] = useState(0);
-
   useEffect(() => {
-    const id = setInterval(() => {
-      setIndex((prev) => (prev + 1) % calculosProCarrossel.length);
+    const id = window.setInterval(() => {
+      setIndex(
+        (indiceAtual) =>
+          (indiceAtual + 1) % calculosProCarrossel.length
+      );
     }, 2000);
-    return () => clearInterval(id);
-  }, []);
 
-  // botão voltar -> prioridade: tipo da URL, depois localStorage
-  const handleVoltar = () => {
+    return () => {
+      window.clearInterval(id);
+    };
+  }, [calculosProCarrossel.length]);
+
+  // Volta da central de cálculos para o painel do usuário
+  function handleVoltarPainel() {
     if (typeof window === "undefined") {
       router.push("/login");
       return;
     }
 
-    const profStr = localStorage.getItem("construtheo_profissional_atual");
-    const clienteStr = localStorage.getItem("construtheo_cliente_atual");
+    const profStr = localStorage.getItem(
+      "construtheo_profissional_atual"
+    );
 
-    // 1) PRIORIDADE: tipo vindo da URL (quem abriu a calculadora)
+    const clienteStr = localStorage.getItem(
+      "construtheo_cliente_atual"
+    );
 
-    // CLIENTE USANDO
+    // Prioridade para o tipo recebido pela URL
     if (tipo === "cliente") {
       router.push("/painel/cliente");
       return;
     }
 
-    // PROFISSIONAL USANDO
     if (tipo === "profissional") {
       if (profStr) {
         try {
-          const prof = JSON.parse(profStr);
-          const id = prof?.id;
-          const apelido = encodeURIComponent(prof?.apelido || "profissional");
+          const profissional = JSON.parse(profStr);
+          const id = profissional?.id;
+
+          const apelido = encodeURIComponent(
+            profissional?.apelido || "profissional"
+          );
 
           if (id) {
-            router.push(`/painel/profissional?id=${id}&apelido=${apelido}`);
+            router.push(
+              `/painel/profissional?id=${id}&apelido=${apelido}`
+            );
           } else {
             router.push("/painel/profissional");
           }
@@ -126,42 +178,73 @@ export default function PainelCalculosPage() {
       } else {
         router.push("/painel/profissional");
       }
+
       return;
     }
 
-    // 2) Fallback: se não veio tipo na URL, decide pelo localStorage
-
-    // se tem cliente salvo, manda pra painel do cliente
+    // Fallback pelo localStorage
     if (clienteStr) {
       router.push("/painel/cliente");
       return;
     }
 
-    // se tem profissional salvo, manda pra painel do profissional
     if (profStr) {
       try {
-        const prof = JSON.parse(profStr);
-        const id = prof?.id;
-        const apelido = encodeURIComponent(prof?.apelido || "profissional");
+        const profissional = JSON.parse(profStr);
+        const id = profissional?.id;
+
+        const apelido = encodeURIComponent(
+          profissional?.apelido || "profissional"
+        );
 
         if (id) {
-          router.push(`/painel/profissional?id=${id}&apelido=${apelido}`);
+          router.push(
+            `/painel/profissional?id=${id}&apelido=${apelido}`
+          );
         } else {
           router.push("/painel/profissional");
         }
       } catch {
         router.push("/painel/profissional");
       }
+
       return;
     }
 
-    // 3) Último caso: ninguém logado
     router.push("/login");
-  };
+  }
 
-  // enquanto verifica acesso, não renderiza o conteúdo (evita flicker)
+  // Abre a calculadora sem navegar para outra rota
+  function abrirCalculadora(rota: string) {
+    if (rota === "/calc/concreto") {
+      setCalculadoraAberta("concreto");
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+  }
+
+  // Enquanto verifica o acesso, não mostra o conteúdo
   if (verificandoAcesso) {
     return null;
+  }
+
+  // Calculadora de concreto aberta dentro do painel
+  if (calculadoraAberta === "concreto") {
+    return (
+      <CalculadoraConcreto
+        onVoltar={() => {
+          setCalculadoraAberta(null);
+
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+          });
+        }}
+      />
+    );
   }
 
   return (
@@ -183,11 +266,16 @@ export default function PainelCalculosPage() {
           boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
         }}
       >
-        {/* botão voltar */}
-        <div style={{ marginBottom: "20px", display: "flex" }}>
+        {/* Botão voltar */}
+        <div
+          style={{
+            marginBottom: "20px",
+            display: "flex",
+          }}
+        >
           <button
             type="button"
-            onClick={handleVoltar}
+            onClick={handleVoltarPainel}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -206,11 +294,18 @@ export default function PainelCalculosPage() {
           </button>
         </div>
 
-        {/* header */}
+        {/* Cabeçalho */}
         <div style={{ marginBottom: "20px" }}>
-          <h1 style={{ fontSize: "1.45rem", fontWeight: 700, color: "#111827" }}>
+          <h1
+            style={{
+              fontSize: "1.45rem",
+              fontWeight: 700,
+              color: "#111827",
+            }}
+          >
             Cálculos da sua Obra
           </h1>
+
           <p
             style={{
               fontSize: "0.85rem",
@@ -223,7 +318,7 @@ export default function PainelCalculosPage() {
           </p>
         </div>
 
-        {/* básicos */}
+        {/* Cálculos básicos */}
         <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
@@ -246,9 +341,9 @@ export default function PainelCalculosPage() {
               scrollSnapType: "x mandatory",
             }}
           >
-            {paginas.map((pagina, idx) => (
+            {paginas.map((pagina, indicePagina) => (
               <div
-                key={idx}
+                key={indicePagina}
                 style={{
                   minWidth: "100%",
                   scrollSnapAlign: "center",
@@ -257,41 +352,95 @@ export default function PainelCalculosPage() {
                   gap: "10px",
                 }}
               >
-                {pagina.map((item) => (
-                  <Link
-                    key={item.rota}
-                    href={item.rota}
-                    style={{
-                      padding: "14px",
-                      borderRadius: "16px",
-                      border: "1px solid #E5E7EB",
-                      background: "#F8FAFC",
-                      textDecoration: "none",
-                      fontSize: "0.9rem",
-                      color: "#0F172A",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500 }}>{item.nome}</span>
-                    <span style={{ color: "#2563EB", fontSize: "1.1rem" }}>
-                      →
-                    </span>
-                  </Link>
-                ))}
+                {pagina.map((item) => {
+                  const ehConcreto =
+                    item.rota === "/calc/concreto";
+
+                  if (ehConcreto) {
+                    return (
+                      <button
+                        key={item.rota}
+                        type="button"
+                        onClick={() =>
+                          abrirCalculadora(item.rota)
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "14px",
+                          borderRadius: "16px",
+                          border: "1px solid #E5E7EB",
+                          background: "#F8FAFC",
+                          fontSize: "0.9rem",
+                          color: "#0F172A",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        <span style={{ fontWeight: 500 }}>
+                          {item.nome}
+                        </span>
+
+                        <span
+                          style={{
+                            color: "#2563EB",
+                            fontSize: "1.1rem",
+                          }}
+                        >
+                          →
+                        </span>
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.rota}
+                      href={item.rota}
+                      style={{
+                        padding: "14px",
+                        borderRadius: "16px",
+                        border: "1px solid #E5E7EB",
+                        background: "#F8FAFC",
+                        textDecoration: "none",
+                        fontSize: "0.9rem",
+                        color: "#0F172A",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ fontWeight: 500 }}>
+                        {item.nome}
+                      </span>
+
+                      <span
+                        style={{
+                          color: "#2563EB",
+                          fontSize: "1.1rem",
+                        }}
+                      >
+                        →
+                      </span>
+                    </Link>
+                  );
+                })}
               </div>
             ))}
           </div>
         </section>
 
-        {/* PRO */}
+        {/* ConstruThéo PRO */}
         <div
           style={{
-            background: "linear-gradient(135deg, #0f172a, #1e293b)",
+            background:
+              "linear-gradient(135deg, #0f172a, #1e293b)",
             padding: "24px",
             borderRadius: "22px",
-            color: "white",
+            color: "#FFFFFF",
             textAlign: "left",
           }}
         >
@@ -312,7 +461,7 @@ export default function PainelCalculosPage() {
               marginBottom: "14px",
             }}
           >
-            Desbloqueie todos cálculos avançados.
+            Desbloqueie todos os cálculos avançados.
           </p>
 
           <div
@@ -330,13 +479,14 @@ export default function PainelCalculosPage() {
           </div>
 
           <button
+            type="button"
             disabled
             style={{
               width: "100%",
               padding: "10px 0",
               borderRadius: "14px",
               background: "#FACC15",
-              color: "#1e293b",
+              color: "#1E293B",
               fontWeight: 700,
               border: "none",
               fontSize: "0.9rem",
