@@ -288,33 +288,34 @@ export function PwaRegister() {
           fontFamily: "inherit",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
-          <img
-            src="/icons/construtheo-app.png?v=2"
-            alt="ConstruThéo"
-            width={42}
-            height={42}
-            style={{
-              width: "42px",
-              height: "42px",
-              flexShrink: 0,
-              borderRadius: "12px",
-              objectFit: "cover",
-            }}
-          />
+       <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  }}
+>
+  <img
+    src="/icons/icon-192x192.png"
+    alt="ConstruThéo"
+    width={42}
+    height={42}
+    style={{
+      width: "42px",
+      height: "42px",
+      flexShrink: 0,
+      borderRadius: "12px",
+      objectFit: "cover",
+      display: "block",
+    }}
+  />
 
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
+  <div
+    style={{
+      flex: 1,
+      minWidth: 0,
+    }}
+  >
             <strong
               style={{
                 display: "block",
