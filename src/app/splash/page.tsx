@@ -19,6 +19,14 @@ export default function SplashScreen() {
   const [mascotIndex, setMascotIndex] = useState(0);
 
   useEffect(() => {
+    async function handleLogout() {
+  await supabase.auth.signOut();
+
+  localStorage.removeItem("construtheo_cliente_atual");
+  localStorage.removeItem("construtheo_demo_cliente");
+
+  router.replace("/login");
+}
     // Começa a preparar a próxima página enquanto a Splash aparece.
     router.prefetch("/login");
 

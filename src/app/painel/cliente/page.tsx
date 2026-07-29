@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "../../../lib/supabaseClient";
@@ -28,6 +29,7 @@ type ClienteResumo = {
 };
 
 export default function PainelClientePage() {
+  const router = useRouter();
   const [cliente, setCliente] = useState<ClienteResumo | null>(null);
   const [carregandoCliente, setCarregandoCliente] = useState(true);
 
@@ -52,6 +54,14 @@ export default function PainelClientePage() {
       setCarregandoCliente(false);
     }
   }, []);
+  async function handleLogout() {
+  await supabase.auth.signOut();
+
+  localStorage.removeItem("construtheo_cliente_atual");
+  localStorage.removeItem("construtheo_demo_cliente");
+
+  router.replace("/login");
+}
 
   function formatarCep(cep?: string) {
     if (!cep) return "";
@@ -122,7 +132,7 @@ export default function PainelClientePage() {
     border: "1px solid rgba(255, 255, 255, 0.65)",
   }}
 >
-          {/* TOPO */}
+{/* TOPO */}
 <header
   style={{
     marginBottom: 22,
@@ -160,7 +170,51 @@ export default function PainelClientePage() {
   >
     Bem-vindo ao seu painel de obra no ConstruThéo.
   </p>
+
+  <div
+    style={{
+      display: "flex",
+      gap: 10,
+      marginTop: 18,
+    }}
+  >
+    <Link
+      href="/"
+      style={{
+        flex: 1,
+        textAlign: "center",
+        padding: "10px 0",
+        borderRadius: 999,
+        background: "#FFFFFF",
+        border: "1px solid #D1D5DB",
+        color: "#111827",
+        textDecoration: "none",
+        fontWeight: 700,
+        fontSize: "0.8rem",
+      }}
+    >
+      Página inicial
+    </Link>
+
+    <button
+      onClick={handleLogout}
+      style={{
+        flex: 1,
+        border: "none",
+        borderRadius: 999,
+        background: "#DC2626",
+        color: "#FFFFFF",
+        fontWeight: 700,
+        fontSize: "0.8rem",
+        cursor: "pointer",
+        padding: "10px 0",
+      }}
+    >
+      Sair
+    </button>
+  </div>
 </header>
+
 
           {/* CARTÃO DADOS / LOCALIZAÇÃO */}
           <section

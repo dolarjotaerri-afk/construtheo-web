@@ -21,17 +21,108 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+useEffect(() => {
+  let mounted = true;
 
+  async function verificarSessao() {
     const params = new URLSearchParams(window.location.search);
-    const t = params.get("tipo");
+    const tipoUrl = params.get("tipo");
 
-    if (t === "cliente" || t === "empresa" || t === "profissional") {
-      setTipo(t);
+    if (
+      tipoUrl === "cliente" ||
+      tipoUrl === "empresa" ||
+      tipoUrl === "profissional"
+    ) {
+      setTipo(tipoUrl);
     }
-  }, []);
+
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (!mounted) return;
+
+    if (error) {
+      console.error("Erro ao verificar sessão:", error);
+      setCheckingSession(false);
+      return;
+    }
+
+    if (!session?.user) {
+      setCheckingSession(false);
+      return;
+    }
+
+    const user = session.user;
+
+    const tipoUsuario =
+      (user.user_metadata?.tipo_usuario as TipoUsuario | undefined) ||
+      "cliente";
+
+    if (tipoUsuario === "empresa") {
+      const { data: empresa } = await supabase
+        .from("empresas")
+        .select("id, status, situacao")
+        .eq("email", user.email ?? "")
+        .maybeSingle();
+
+      if (!mounted) return;
+
+      const status = empresa?.status || empresa?.situacao;
+
+      if (empresa && (!status || status === "aprovado")) {
+        router.replace("/painel/empresa");
+        return;
+      }
+
+      setMensagem("Seu cadastro de empresa ainda está em análise.");
+      setCheckingSession(false);
+      return;
+    }
+
+    if (tipoUsuario === "profissional") {
+      const { data: profissional } = await supabase
+        .from("profissionais")
+        .select("id, nome, apelido, status, situacao")
+        .eq("email", user.email ?? "")
+        .maybeSingle();
+
+      if (!mounted) return;
+
+      const status = profissional?.status || profissional?.situacao;
+
+      if (profissional && (!status || status === "aprovado")) {
+        const apelido =
+          profissional.apelido ||
+          profissional.nome ||
+          "profissional";
+
+        router.replace(
+          `/painel/profissional?id=${encodeURIComponent(
+            profissional.id
+          )}&apelido=${encodeURIComponent(apelido)}`
+        );
+
+        return;
+      }
+
+      setMensagem("Seu cadastro profissional ainda está em análise.");
+      setCheckingSession(false);
+      return;
+    }
+
+    router.replace("/painel/cliente");
+  }
+
+  verificarSessao();
+
+  return () => {
+    mounted = false;
+  };
+}, [router]);
 
   const labelTipo = tipoLabels[tipo] || "Cliente";
 
@@ -109,7 +200,7 @@ export default function LoginPage() {
           );
         }
 
-        router.push("/painel/cliente");
+        router.replace("/painel/cliente");
         return;
       }
 
@@ -191,6 +282,39 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+if (checkingSession) {
+  return (
+    <main
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#F1F5F9",
+      }}
+    >
+      <div
+        style={{
+          width: "34px",
+          height: "34px",
+          borderRadius: "999px",
+          border: "4px solid #DBEAFE",
+          borderTopColor: "#2563EB",
+          animation: "loginSpin 0.8s linear infinite",
+        }}
+      />
+
+      <style jsx>{`
+        @keyframes loginSpin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
 
   return (
     <main
