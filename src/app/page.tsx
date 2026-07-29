@@ -541,9 +541,10 @@ export default function RootPage() {
     }
 
     .home-title {
-      max-width: 620px;
-      font-size: 1.9rem !important;
-    }
+  max-width: 760px;
+  font-size: 2.65rem !important;
+  line-height: 1.05 !important;
+}
 
     .home-description {
       max-width: 650px;
@@ -657,11 +658,11 @@ export default function RootPage() {
 }
 
 const mainChoiceCardStyle: CSSProperties = {
-  minHeight: 76,
+  minHeight: 115,
   borderRadius: "18px",
   border: "1px solid #E5E7EB",
   background: "#FFFFFF",
-  padding: "14px 13px",
+  padding: "22px 20px",
   boxShadow: "0 5px 14px rgba(15, 23, 42, 0.05)",
   display: "flex",
   flexDirection: "column",
@@ -748,8 +749,8 @@ const companyCardStyle: CSSProperties = {
 };
 
 const logoCircleStyle: CSSProperties = {
-  width: 40,
-  height: 40,
+  width: 54,
+  height: 54,
   borderRadius: "999px",
   background: "linear-gradient(180deg, #EFF6FF, #F8FAFC)",
   border: "1px solid #DBEAFE",
@@ -795,12 +796,15 @@ const companyLocationStyle: CSSProperties = {
 const professionalCardStyle: CSSProperties = {
   minWidth: "150px",
   maxWidth: "150px",
+  minHeight: "210px",
   flexShrink: 0,
   border: "1px solid #E5E7EB",
   borderRadius: "18px",
   background: "#FFFFFF",
-  padding: "13px 12px",
+  padding: "18px 16px",
   boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
+  display: "flex",
+  flexDirection: "column",
 };
 
 const professionalTitleStyle: CSSProperties = {

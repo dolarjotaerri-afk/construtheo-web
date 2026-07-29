@@ -4,43 +4,50 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
+const MASCOTS = [
+  "/mascote-pedreiro.png",
+  "/mascote-pedreiro1.png",
+  "/mascote-pintor.png",
+  "/mascote-eletricista-v2.png",
+  "/mascote-jardineiro-v2.png",
+];
+
+const SPLASH_DURATION = 1400;
+
 export default function SplashScreen() {
   const router = useRouter();
   const [mascotIndex, setMascotIndex] = useState(0);
 
-  const mascots = [
-    "/mascote-pedreiro.png",
-    "/mascote-pedreiro1.png",
-    "/mascote-pintor.png",
-    "/mascote-eletricista-v2.png",
-    "/mascote-jardineiro-v2.png",
-  ];
-
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMascotIndex((prev) => (prev + 1) % mascots.length);
-    }, 800);
+    // Começa a preparar a próxima página enquanto a Splash aparece.
+    router.prefetch("/login");
 
-    return () => clearInterval(interval);
-  }, []);
+    // Faz somente uma troca de mascote durante a Splash.
+    const mascotTimer = window.setTimeout(() => {
+      setMascotIndex(1);
+    }, 650);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push("/login");
-    }, 5000);
+    // Abre a próxima página após 1,4 segundo.
+    const navigationTimer = window.setTimeout(() => {
+      router.replace("/login");
+    }, SPLASH_DURATION);
 
-    return () => clearTimeout(timer);
+    return () => {
+      window.clearTimeout(mascotTimer);
+      window.clearTimeout(navigationTimer);
+    };
   }, [router]);
 
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         margin: 0,
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         background: "linear-gradient(180deg, #0f172a, #1e3a5f)",
+        padding: 16,
       }}
     >
       <div
@@ -68,9 +75,10 @@ export default function SplashScreen() {
           }}
         >
           <Image
-            src={mascots[mascotIndex]}
+            src={MASCOTS[mascotIndex]}
             alt="Mascote ConstruThéo"
             fill
+            sizes="140px"
             style={{
               objectFit: "contain",
               filter: "drop-shadow(0 8px 16px rgba(15, 23, 42, 0.35))",
@@ -83,7 +91,7 @@ export default function SplashScreen() {
           style={{
             fontSize: 24,
             fontWeight: 600,
-            marginBottom: 8,
+            margin: "0 0 8px",
             color: "#0f172a",
           }}
         >
@@ -94,7 +102,7 @@ export default function SplashScreen() {
           style={{
             fontSize: 14,
             color: "#64748b",
-            marginBottom: 16,
+            margin: "0 0 16px",
           }}
         >
           Sua obra conectada a quem faz acontecer.
@@ -104,6 +112,7 @@ export default function SplashScreen() {
           style={{
             fontSize: 11,
             color: "#94a3b8",
+            margin: 0,
           }}
         >
           Carregando sua experiência na construção civil...

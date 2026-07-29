@@ -565,16 +565,19 @@ const carouselStyle: CSSProperties = {
 };
 
 const companyCardStyle: CSSProperties = {
-  minWidth: 136,
-  maxWidth: 136,
+  minWidth: "136px",
+  maxWidth: "136px",
+  minHeight: "210px",
   flexShrink: 0,
   border: "1px solid #E5E7EB",
-  borderRadius: 18,
+  borderRadius: "18px",
   background: "#FFFFFF",
-  padding: "12px 11px",
+  padding: "18px 16px",
   boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
   cursor: "pointer",
   textAlign: "left",
+  display: "flex",
+  flexDirection: "column",
 };
 
 const logoCircleStyle: CSSProperties = {
