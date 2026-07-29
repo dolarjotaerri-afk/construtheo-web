@@ -296,7 +296,7 @@ export function PwaRegister() {
           }}
         >
           <img
-            src="/icons/icon-192x192.png"
+            src="/icons/construtheo-app.png?v=2"
             alt="ConstruThéo"
             width={42}
             height={42}
