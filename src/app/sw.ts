@@ -52,7 +52,10 @@ const serwist = new Serwist({
     ],
   },
 
-  skipWaiting: true,
+  // Agora o novo Service Worker fica aguardando
+  // até o usuário clicar em "Atualizar".
+  skipWaiting: false,
+
   clientsClaim: true,
   navigationPreload: true,
 
@@ -60,6 +63,14 @@ const serwist = new Serwist({
     navegacaoOffline,
     ...defaultCache,
   ],
+});
+
+// Recebe a mensagem enviada pelo PwaRegister
+// para ativar imediatamente a nova versão.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 serwist.addEventListeners();
