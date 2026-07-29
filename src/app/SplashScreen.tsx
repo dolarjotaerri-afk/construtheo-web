@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const MASCOTS = [
@@ -68,15 +67,18 @@ export default function SplashScreen({
             marginBottom: 12,
           }}
         >
-          <Image
+          <img
             src={MASCOTS[mascotIndex]}
             alt="Mascote ConstruThéo"
-            fill
-            sizes="140px"
-            priority
+            width={140}
+            height={140}
+            draggable={false}
             style={{
+              width: "100%",
+              height: "100%",
               objectFit: "contain",
-              filter: "drop-shadow(0 8px 16px rgba(15, 23, 42, 0.35))",
+              filter:
+                "drop-shadow(0 8px 16px rgba(15, 23, 42, 0.35))",
             }}
           />
         </div>
