@@ -40,20 +40,52 @@ export default function PainelClientePage() {
     useState<FeaturedProfessional | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+  let ativo = true;
 
+  async function verificarAcesso() {
     try {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("Erro ao verificar sessão:", error);
+      }
+
+      if (!session) {
+        localStorage.removeItem("construtheo_cliente_atual");
+        localStorage.removeItem("construtheo_demo_cliente");
+
+        router.replace("/login?tipo=cliente");
+        return;
+      }
+
       const salvo = localStorage.getItem("construtheo_cliente_atual");
-      if (salvo) {
+
+      if (salvo && ativo) {
         const parsed: ClienteResumo = JSON.parse(salvo);
         setCliente(parsed);
       }
     } catch (err) {
-      console.error("Erro ao ler cliente do localStorage:", err);
+      console.error("Erro ao carregar painel do cliente:", err);
+
+      if (ativo) {
+        router.replace("/login?tipo=cliente");
+      }
     } finally {
-      setCarregandoCliente(false);
+      if (ativo) {
+        setCarregandoCliente(false);
+      }
     }
-  }, []);
+  }
+
+  verificarAcesso();
+
+  return () => {
+    ativo = false;
+  };
+}, [router]);
   async function handleLogout() {
   await supabase.auth.signOut();
 
@@ -95,7 +127,34 @@ export default function PainelClientePage() {
     []
   );
 
-  const profissionalMessage = useMemo(() => {
+  const profissionalMessage = useMemo(() => {if (carregandoCliente) {
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(180deg, #cfe8ff, #3b82b8)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        style={{
+          background: "#FFFFFF",
+          borderRadius: 20,
+          padding: "22px 26px",
+          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)",
+          color: "#374151",
+          fontSize: "0.9rem",
+          fontWeight: 700,
+        }}
+      >
+        Verificando seu acesso...
+      </div>
+    </main>
+  );
+}
     const titulo = profissionalSelecionado?.title || "um profissional";
 
     return encodeURIComponent(

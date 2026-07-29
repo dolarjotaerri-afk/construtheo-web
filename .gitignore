@@ -4,3 +4,8 @@ node_modules/
 .env.local
 .vercel
 .env*
+# Serwist
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/swe-worker-*.js.map
