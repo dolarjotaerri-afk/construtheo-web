@@ -583,25 +583,26 @@ export default function RootPage() {
   }
 
   @media (min-width: 1100px) {
-    .home-page {
-      padding: 40px 28px !important;
-    }
+    .home-main-choice-link section{
+    min-height:120px !important;
+    padding:22px !important;
+}
 
-    .home-shell {
-      max-width: 1180px !important;
-      padding: 38px 36px 32px !important;
-      border-radius: 32px !important;
-    }
+.home-company-card{
+    min-height:220px !important;
+}
 
-    .home-header {
-      margin-bottom: 28px !important;
-    }
+.home-professional-card{
+    min-height:220px !important;
+}
 
-    .home-title {
-      max-width: 720px;
-      font-size: 2.3rem !important;
-      line-height: 1.08 !important;
-    }
+.home-company-card img{
+    transform:scale(1.35);
+}
+
+.home-title{
+    font-size:2.8rem !important;
+}
 
     .home-description {
       max-width: 760px;
@@ -658,17 +659,17 @@ export default function RootPage() {
 }
 
 const mainChoiceCardStyle: CSSProperties = {
-  minHeight: 115,
+  minHeight: 76,
   borderRadius: "18px",
   border: "1px solid #E5E7EB",
   background: "#FFFFFF",
-  padding: "22px 20px",
-  boxShadow: "0 5px 14px rgba(15, 23, 42, 0.05)",
+  padding: "14px 13px",
+  boxShadow: "0 5px 14px rgba(15,23,42,.05)",
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
   transition:
-    "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+    "transform .18s ease, box-shadow .18s ease, border-color .18s ease",
 };
 
 const mainChoiceTitleStyle: CSSProperties = {
@@ -749,8 +750,8 @@ const companyCardStyle: CSSProperties = {
 };
 
 const logoCircleStyle: CSSProperties = {
-  width: 54,
-  height: 54,
+ width: 40,
+height: 40,
   borderRadius: "999px",
   background: "linear-gradient(180deg, #EFF6FF, #F8FAFC)",
   border: "1px solid #DBEAFE",
@@ -796,15 +797,12 @@ const companyLocationStyle: CSSProperties = {
 const professionalCardStyle: CSSProperties = {
   minWidth: "150px",
   maxWidth: "150px",
-  minHeight: "210px",
   flexShrink: 0,
   border: "1px solid #E5E7EB",
   borderRadius: "18px",
   background: "#FFFFFF",
-  padding: "18px 16px",
-  boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
-  display: "flex",
-  flexDirection: "column",
+  padding: "13px 12px",
+  boxShadow: "0 8px 18px rgba(15,23,42,.05)",
 };
 
 const professionalTitleStyle: CSSProperties = {
