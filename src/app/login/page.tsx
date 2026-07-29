@@ -113,7 +113,7 @@ useEffect(() => {
       setCheckingSession(false);
       return;
     }
-
+marcarPrimeiroLogin();
     router.replace("/painel/cliente");
   }
 
@@ -125,6 +125,11 @@ useEffect(() => {
 }, [router]);
 
   const labelTipo = tipoLabels[tipo] || "Cliente";
+  function marcarPrimeiroLogin() {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("construtheo-ja-logou", "true");
+  }
+}
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -200,7 +205,9 @@ useEffect(() => {
           );
         }
 
-        router.replace("/painel/cliente");
+        localStorage.setItem("construtheo-ja-logou", "true");
+
+router.replace("/painel/cliente");
         return;
       }
 
@@ -235,7 +242,14 @@ useEffect(() => {
         const apelido =
           profissionalData.apelido || profissionalData.nome || "profissional";
 
-        router.push(
+        localStorage.setItem("construtheo-ja-logou", "true");
+marcarPrimeiroLogin();
+router.push(
+  `/painel/profissional?id=${encodeURIComponent(
+    profissionalData.id
+  )}&apelido=${encodeURIComponent(apelido)}`
+);
+          router.push(
           `/painel/profissional?id=${encodeURIComponent(
             profissionalData.id
           )}&apelido=${encodeURIComponent(apelido)}`
@@ -270,6 +284,9 @@ useEffect(() => {
           return;
         }
 
+        localStorage.setItem("construtheo-ja-logou", "true");
+marcarPrimeiroLogin();
+router.push("/painel/empresa");
         router.push("/painel/empresa");
         return;
       }

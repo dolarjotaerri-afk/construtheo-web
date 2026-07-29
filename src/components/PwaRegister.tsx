@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -10,7 +11,17 @@ interface BeforeInstallPromptEvent extends Event {
   }>;
 }
 
+type NavigatorIOS = Navigator & {
+  standalone?: boolean;
+};
+
+const TEMPO_PARA_MOSTRAR_NOVAMENTE = 7 * 24 * 60 * 60 * 1000;
+
 export function PwaRegister() {
+  const pathname = usePathname();
+
+  const [jaLogou, setJaLogou] = useState(false);
+
   const [eventoInstalacao, setEventoInstalacao] =
     useState<BeforeInstallPromptEvent | null>(null);
 
@@ -23,85 +34,99 @@ export function PwaRegister() {
   const [novaVersao, setNovaVersao] = useState(false);
   const [atualizando, setAtualizando] = useState(false);
 
+  const verificarSeEstaInstalado = () => {
+    const modoStandalone =
+      window.matchMedia("(display-mode: standalone)").matches;
+
+    const standaloneIOS =
+      (window.navigator as NavigatorIOS).standalone === true;
+
+    return modoStandalone || standaloneIOS;
+  };
+
+  const verificarSeEhIOS = () => {
+    return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  };
+
+  /*
+   * Verifica novamente o login sempre que a rota mudar.
+   * Isso é necessário porque o layout principal continua montado
+   * quando o usuário sai do login e entra no painel.
+   */
   useEffect(() => {
-    const estaInstalado =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in window.navigator &&
-        (window.navigator as Navigator & { standalone?: boolean }).standalone);
+    const usuarioJaLogou =
+      localStorage.getItem("construtheo-ja-logou") === "true";
 
-    const instalacaoRecusada =
-      localStorage.getItem("construtheo-instalar-depois") === "true";
+    setJaLogou(usuarioJaLogou);
 
-    const navegadorIOS =
-      /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+    if (!usuarioJaLogou || verificarSeEstaInstalado()) {
+      setMostrarInstalacao(false);
+      return;
+    }
 
-    const capturarInstalacao = (event: Event) => {
+    const adiadoAte = Number(
+      localStorage.getItem("construtheo-instalar-adiado-ate") || "0"
+    );
+
+    if (Date.now() < adiadoAte) {
+      setMostrarInstalacao(false);
+      return;
+    }
+
+    const ehIOS = verificarSeEhIOS();
+
+    if (ehIOS || eventoInstalacao) {
+      const temporizador = window.setTimeout(() => {
+        setMostrarInstalacao(true);
+      }, 2500);
+
+      return () => {
+        window.clearTimeout(temporizador);
+      };
+    }
+  }, [pathname, eventoInstalacao]);
+
+  /*
+   * Captura o evento de instalação oferecido pelo navegador.
+   */
+  useEffect(() => {
+    const capturarEventoInstalacao = (event: Event) => {
       event.preventDefault();
 
-      const evento = event as BeforeInstallPromptEvent;
-
-      setEventoInstalacao(evento);
-
-      if (!estaInstalado && !instalacaoRecusada) {
-        setMostrarInstalacao(true);
-      }
+      setEventoInstalacao(event as BeforeInstallPromptEvent);
     };
 
     const aplicativoInstalado = () => {
+      setEventoInstalacao(null);
       setMostrarInstalacao(false);
       setMostrarInstrucaoIOS(false);
-      setEventoInstalacao(null);
 
-      localStorage.removeItem("construtheo-instalar-depois");
+      localStorage.removeItem("construtheo-instalar-adiado-ate");
     };
 
     window.addEventListener(
       "beforeinstallprompt",
-      capturarInstalacao,
+      capturarEventoInstalacao
     );
 
-    window.addEventListener(
-      "appinstalled",
-      aplicativoInstalado,
-    );
-
-    if (
-      navegadorIOS &&
-      !estaInstalado &&
-      !instalacaoRecusada
-    ) {
-      const timer = window.setTimeout(() => {
-        setMostrarInstalacao(true);
-      }, 2000);
-
-      return () => {
-        window.clearTimeout(timer);
-
-        window.removeEventListener(
-          "beforeinstallprompt",
-          capturarInstalacao,
-        );
-
-        window.removeEventListener(
-          "appinstalled",
-          aplicativoInstalado,
-        );
-      };
-    }
+    window.addEventListener("appinstalled", aplicativoInstalado);
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
-        capturarInstalacao,
+        capturarEventoInstalacao
       );
 
       window.removeEventListener(
         "appinstalled",
-        aplicativoInstalado,
+        aplicativoInstalado
       );
     };
   }, []);
 
+  /*
+   * Registra o Service Worker e detecta novas versões.
+   */
   useEffect(() => {
     if (!("serviceWorker" in navigator)) {
       return;
@@ -145,12 +170,12 @@ export function PwaRegister() {
       } catch (error) {
         console.error(
           "Erro ao registrar Service Worker:",
-          error,
+          error
         );
       }
     };
 
-    const atualizarPagina = () => {
+    const recarregarComNovaVersao = () => {
       if (paginaRecarregada) {
         return;
       }
@@ -161,7 +186,7 @@ export function PwaRegister() {
 
     navigator.serviceWorker.addEventListener(
       "controllerchange",
-      atualizarPagina,
+      recarregarComNovaVersao
     );
 
     registrarServiceWorker();
@@ -169,16 +194,13 @@ export function PwaRegister() {
     return () => {
       navigator.serviceWorker.removeEventListener(
         "controllerchange",
-        atualizarPagina,
+        recarregarComNovaVersao
       );
     };
   }, []);
 
   const instalarAplicativo = async () => {
-    const navegadorIOS =
-      /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-
-    if (navegadorIOS && !eventoInstalacao) {
+    if (verificarSeEhIOS() && !eventoInstalacao) {
       setMostrarInstrucaoIOS(true);
       return;
     }
@@ -187,25 +209,35 @@ export function PwaRegister() {
       return;
     }
 
-    await eventoInstalacao.prompt();
+    try {
+      await eventoInstalacao.prompt();
 
-    const escolha = await eventoInstalacao.userChoice;
+      const escolha = await eventoInstalacao.userChoice;
 
-    if (escolha.outcome === "accepted") {
-      setMostrarInstalacao(false);
+      if (escolha.outcome === "accepted") {
+        setMostrarInstalacao(false);
+      }
+
+      setEventoInstalacao(null);
+    } catch (error) {
+      console.error(
+        "Erro ao solicitar instalação do aplicativo:",
+        error
+      );
     }
-
-    setEventoInstalacao(null);
   };
 
-  const fecharInstalacao = () => {
-    setMostrarInstalacao(false);
-    setMostrarInstrucaoIOS(false);
+  const instalarDepois = () => {
+    const mostrarNovamenteEm =
+      Date.now() + TEMPO_PARA_MOSTRAR_NOVAMENTE;
 
     localStorage.setItem(
-      "construtheo-instalar-depois",
-      "true",
+      "construtheo-instalar-adiado-ate",
+      String(mostrarNovamenteEm)
     );
+
+    setMostrarInstalacao(false);
+    setMostrarInstrucaoIOS(false);
   };
 
   const atualizarAplicativo = () => {
@@ -223,243 +255,269 @@ export function PwaRegister() {
     });
   };
 
-  const estiloCard: React.CSSProperties = {
-    position: "fixed",
-    left: "16px",
-    right: "16px",
-    bottom: "18px",
-    zIndex: 99999,
-    maxWidth: "430px",
-    margin: "0 auto",
-    padding: "18px",
-    borderRadius: "22px",
-    background: "#ffffff",
-    border: "1px solid rgba(14, 165, 233, 0.20)",
-    boxShadow: "0 18px 50px rgba(15, 23, 42, 0.24)",
-    fontFamily: "inherit",
+  const fecharAtualizacao = () => {
+    setNovaVersao(false);
   };
 
-  const estiloBotaoPrincipal: React.CSSProperties = {
-    border: "none",
-    borderRadius: "13px",
-    padding: "11px 16px",
-    background: "#0EA5E9",
-    color: "#ffffff",
-    fontSize: "14px",
-    fontWeight: 700,
-    cursor: "pointer",
-  };
+  /*
+   * Antes do primeiro login, nenhum card aparece.
+   */
+  if (!jaLogou) {
+    return null;
+  }
 
-  const estiloBotaoSecundario: React.CSSProperties = {
-    border: "none",
-    borderRadius: "13px",
-    padding: "11px 14px",
-    background: "#F1F5F9",
-    color: "#475569",
-    fontSize: "14px",
-    fontWeight: 600,
-    cursor: "pointer",
-  };
-
-  if (novaVersao) {
+  /*
+   * A instalação tem prioridade sobre o aviso de atualização.
+   */
+  if (mostrarInstalacao) {
     return (
-      <div style={estiloCard}>
+      <div
+        style={{
+          position: "fixed",
+          left: "12px",
+          right: "12px",
+          bottom: "14px",
+          zIndex: 99999,
+          maxWidth: "390px",
+          margin: "0 auto",
+          padding: "11px 12px",
+          borderRadius: "16px",
+          background: "#FFFFFF",
+          border: "1px solid rgba(14, 165, 233, 0.18)",
+          boxShadow: "0 10px 30px rgba(15, 23, 42, 0.18)",
+          fontFamily: "inherit",
+        }}
+      >
         <div
           style={{
             display: "flex",
-            alignItems: "flex-start",
-            gap: "13px",
+            alignItems: "center",
+            gap: "10px",
           }}
         >
+          <img
+            src="/icons/icon-192x192.png"
+            alt="ConstruThéo"
+            width={42}
+            height={42}
+            style={{
+              width: "42px",
+              height: "42px",
+              flexShrink: 0,
+              borderRadius: "12px",
+              objectFit: "cover",
+            }}
+          />
+
           <div
             style={{
-              width: "46px",
-              height: "46px",
-              flexShrink: 0,
-              borderRadius: "15px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#E0F2FE",
-              fontSize: "23px",
+              flex: 1,
+              minWidth: 0,
             }}
           >
-            🚀
-          </div>
-
-          <div style={{ flex: 1 }}>
             <strong
               style={{
                 display: "block",
                 color: "#0F172A",
-                fontSize: "16px",
+                fontSize: "13px",
+                lineHeight: 1.3,
+              }}
+            >
+              Instale o ConstruThéo
+            </strong>
+
+            <span
+              style={{
+                display: "block",
+                marginTop: "2px",
+                color: "#64748B",
+                fontSize: "11px",
+                lineHeight: 1.35,
+              }}
+            >
+              Acesse direto pela tela inicial.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={instalarAplicativo}
+            style={{
+              flexShrink: 0,
+              border: "none",
+              borderRadius: "10px",
+              padding: "9px 12px",
+              background: "#0EA5E9",
+              color: "#FFFFFF",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Instalar
+          </button>
+
+          <button
+            type="button"
+            onClick={instalarDepois}
+            aria-label="Fechar"
+            style={{
+              width: "26px",
+              height: "26px",
+              flexShrink: 0,
+              border: "none",
+              borderRadius: "50%",
+              background: "#F1F5F9",
+              color: "#64748B",
+              fontSize: "16px",
+              lineHeight: 1,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {mostrarInstrucaoIOS && (
+          <div
+            style={{
+              marginTop: "9px",
+              padding: "8px 10px",
+              borderRadius: "10px",
+              background: "#F0F9FF",
+              color: "#334155",
+              fontSize: "11px",
+              lineHeight: 1.45,
+            }}
+          >
+            No Safari, toque em{" "}
+            <strong>Compartilhar</strong> e depois em{" "}
+            <strong>Adicionar à Tela de Início</strong>.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /*
+   * O aviso de atualização também só aparece depois do login.
+   */
+  if (novaVersao) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          left: "12px",
+          right: "12px",
+          bottom: "14px",
+          zIndex: 99999,
+          maxWidth: "390px",
+          margin: "0 auto",
+          padding: "11px 12px",
+          borderRadius: "16px",
+          background: "#FFFFFF",
+          border: "1px solid rgba(14, 165, 233, 0.18)",
+          boxShadow: "0 10px 30px rgba(15, 23, 42, 0.18)",
+          fontFamily: "inherit",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "12px",
+              background: "#E0F2FE",
+              fontSize: "18px",
+            }}
+          >
+            ↻
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            <strong
+              style={{
+                display: "block",
+                color: "#0F172A",
+                fontSize: "13px",
+                lineHeight: 1.3,
               }}
             >
               Nova versão disponível
             </strong>
 
-            <p
+            <span
               style={{
-                margin: "5px 0 14px",
+                display: "block",
+                marginTop: "2px",
                 color: "#64748B",
-                fontSize: "13px",
-                lineHeight: 1.5,
+                fontSize: "11px",
               }}
             >
-              Atualize o ConstruThéo para receber as
-              melhorias mais recentes.
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={atualizarAplicativo}
-                disabled={atualizando}
-                style={{
-                  ...estiloBotaoPrincipal,
-                  opacity: atualizando ? 0.7 : 1,
-                }}
-              >
-                {atualizando
-                  ? "Atualizando..."
-                  : "Atualizar agora"}
-              </button>
-
-              {!atualizando && (
-                <button
-                  type="button"
-                  onClick={() => setNovaVersao(false)}
-                  style={estiloBotaoSecundario}
-                >
-                  Depois
-                </button>
-              )}
-            </div>
+              Atualize para receber as melhorias.
+            </span>
           </div>
+
+          <button
+            type="button"
+            onClick={atualizarAplicativo}
+            disabled={atualizando}
+            style={{
+              flexShrink: 0,
+              border: "none",
+              borderRadius: "10px",
+              padding: "9px 12px",
+              background: "#0EA5E9",
+              color: "#FFFFFF",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: atualizando ? "default" : "pointer",
+              opacity: atualizando ? 0.7 : 1,
+            }}
+          >
+            {atualizando ? "Atualizando..." : "Atualizar"}
+          </button>
+
+          {!atualizando && (
+            <button
+              type="button"
+              onClick={fecharAtualizacao}
+              aria-label="Fechar"
+              style={{
+                width: "26px",
+                height: "26px",
+                flexShrink: 0,
+                border: "none",
+                borderRadius: "50%",
+                background: "#F1F5F9",
+                color: "#64748B",
+                fontSize: "16px",
+                lineHeight: 1,
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
-  if (!mostrarInstalacao) {
-    return null;
-  }
-
-  return (
-    <div style={estiloCard}>
-      <button
-        type="button"
-        onClick={fecharInstalacao}
-        aria-label="Fechar"
-        style={{
-          position: "absolute",
-          top: "11px",
-          right: "12px",
-          width: "30px",
-          height: "30px",
-          border: "none",
-          borderRadius: "50%",
-          background: "#F1F5F9",
-          color: "#64748B",
-          fontSize: "17px",
-          cursor: "pointer",
-        }}
-      >
-        ×
-      </button>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: "14px",
-          paddingRight: "25px",
-        }}
-      >
-        <img
-          src="/icons/icon-192x192.png"
-          alt="ConstruThéo"
-          width={54}
-          height={54}
-          style={{
-            width: "54px",
-            height: "54px",
-            flexShrink: 0,
-            borderRadius: "16px",
-            objectFit: "cover",
-          }}
-        />
-
-        <div style={{ flex: 1 }}>
-          <strong
-            style={{
-              display: "block",
-              color: "#0F172A",
-              fontSize: "17px",
-            }}
-          >
-            Instale o ConstruThéo
-          </strong>
-
-          <p
-            style={{
-              margin: "5px 0 14px",
-              color: "#64748B",
-              fontSize: "13px",
-              lineHeight: 1.5,
-            }}
-          >
-            Tenha acesso rápido às calculadoras,
-            profissionais e empresas diretamente pelo
-            seu celular.
-          </p>
-
-          {mostrarInstrucaoIOS ? (
-            <div
-              style={{
-                padding: "12px",
-                borderRadius: "13px",
-                background: "#F0F9FF",
-                color: "#334155",
-                fontSize: "13px",
-                lineHeight: 1.5,
-              }}
-            >
-              Toque no botão de compartilhar do Safari
-              e depois em{" "}
-              <strong>Adicionar à Tela de Início</strong>.
-            </div>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={instalarAplicativo}
-                style={estiloBotaoPrincipal}
-              >
-                Instalar aplicativo
-              </button>
-
-              <button
-                type="button"
-                onClick={fecharInstalacao}
-                style={estiloBotaoSecundario}
-              >
-                Agora não
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }
