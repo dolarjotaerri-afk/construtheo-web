@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import CalculadoraBlocos from "../../../components/calculos/CalculadoraBlocos";
 import CalculadoraConcreto from "../../../components/calculos/CalculadoraConcreto";
 
 type CalcItem = {
@@ -14,21 +15,13 @@ type CalcItem = {
 export default function PainelCalculosPage() {
   const router = useRouter();
 
-  // Tipo de usuário vindo da URL
   const [tipo, setTipo] = useState<string | null>(null);
-
-  // Controle de autorização
   const [verificandoAcesso, setVerificandoAcesso] = useState(true);
-
-  // Calculadora aberta dentro do próprio painel
   const [calculadoraAberta, setCalculadoraAberta] = useState<string | null>(
     null
   );
-
-  // Índice do carrossel PRO
   const [index, setIndex] = useState(0);
 
-  // Lê ?tipo= da URL no navegador
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -40,7 +33,6 @@ export default function PainelCalculosPage() {
     }
   }, []);
 
-  // Guard de acesso
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -52,7 +44,6 @@ export default function PainelCalculosPage() {
       "construtheo_cliente_atual"
     );
 
-    // Só entra se tiver cliente ou profissional salvo
     if (!profStr && !clienteStr) {
       router.replace("/login");
       return;
@@ -61,7 +52,6 @@ export default function PainelCalculosPage() {
     setVerificandoAcesso(false);
   }, [router]);
 
-  // Cálculos básicos gratuitos
   const calculosGratis: CalcItem[] = [
     {
       nome: "Calcular Concreto",
@@ -97,14 +87,12 @@ export default function PainelCalculosPage() {
     },
   ];
 
-  // Separa em páginas de quatro itens
   const paginas: CalcItem[][] = [];
 
   for (let i = 0; i < calculosGratis.length; i += 4) {
     paginas.push(calculosGratis.slice(i, i + 4));
   }
 
-  // Carrossel PRO
   const calculosProCarrossel = [
     "Calcular Ferro / Aço",
     "Calcular Formas",
@@ -134,7 +122,6 @@ export default function PainelCalculosPage() {
     };
   }, [calculosProCarrossel.length]);
 
-  // Volta da central de cálculos para o painel do usuário
   function handleVoltarPainel() {
     if (typeof window === "undefined") {
       router.push("/login");
@@ -149,7 +136,6 @@ export default function PainelCalculosPage() {
       "construtheo_cliente_atual"
     );
 
-    // Prioridade para o tipo recebido pela URL
     if (tipo === "cliente") {
       router.push("/painel/cliente");
       return;
@@ -182,7 +168,6 @@ export default function PainelCalculosPage() {
       return;
     }
 
-    // Fallback pelo localStorage
     if (clienteStr) {
       router.push("/painel/cliente");
       return;
@@ -214,35 +199,46 @@ export default function PainelCalculosPage() {
     router.push("/login");
   }
 
-  // Abre a calculadora sem navegar para outra rota
   function abrirCalculadora(rota: string) {
     if (rota === "/calc/concreto") {
       setCalculadoraAberta("concreto");
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
     }
+
+    if (rota === "/calc/blocos") {
+      setCalculadoraAberta("blocos");
+    }
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
-  // Enquanto verifica o acesso, não mostra o conteúdo
+  function voltarParaLista() {
+    setCalculadoraAberta(null);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
   if (verificandoAcesso) {
     return null;
   }
 
-  // Calculadora de concreto aberta dentro do painel
   if (calculadoraAberta === "concreto") {
     return (
       <CalculadoraConcreto
-        onVoltar={() => {
-          setCalculadoraAberta(null);
+        onVoltar={voltarParaLista}
+      />
+    );
+  }
 
-          window.scrollTo({
-            top: 0,
-            behavior: "smooth",
-          });
-        }}
+  if (calculadoraAberta === "blocos") {
+    return (
+      <CalculadoraBlocos
+        onVoltar={voltarParaLista}
       />
     );
   }
@@ -266,7 +262,6 @@ export default function PainelCalculosPage() {
           boxShadow: "0 4px 18px rgba(0,0,0,0.08)",
         }}
       >
-        {/* Botão voltar */}
         <div
           style={{
             marginBottom: "20px",
@@ -294,7 +289,6 @@ export default function PainelCalculosPage() {
           </button>
         </div>
 
-        {/* Cabeçalho */}
         <div style={{ marginBottom: "20px" }}>
           <h1
             style={{
@@ -318,7 +312,6 @@ export default function PainelCalculosPage() {
           </p>
         </div>
 
-        {/* Cálculos básicos */}
         <section style={{ marginBottom: "24px" }}>
           <h2
             style={{
@@ -353,10 +346,11 @@ export default function PainelCalculosPage() {
                 }}
               >
                 {pagina.map((item) => {
-                  const ehConcreto =
-                    item.rota === "/calc/concreto";
+                  const abreDentroDoPainel =
+                    item.rota === "/calc/concreto" ||
+                    item.rota === "/calc/blocos";
 
-                  if (ehConcreto) {
+                  if (abreDentroDoPainel) {
                     return (
                       <button
                         key={item.rota}
@@ -433,7 +427,6 @@ export default function PainelCalculosPage() {
           </div>
         </section>
 
-        {/* ConstruThéo PRO */}
         <div
           style={{
             background:
