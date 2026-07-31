@@ -382,7 +382,7 @@ export default function RootPage() {
               </div>
 
               <Link href="/cadastro/empresa" style={smallActionButtonStyle}>
-                Cadastrar empresa
+                Cadastrar
               </Link>
             </div>
 
@@ -421,7 +421,7 @@ export default function RootPage() {
               </div>
 
               <Link href="/cadastro/prestador" style={smallActionButtonStyle}>
-                Cadastrar profissional
+                Cadastrar
               </Link>
             </div>
 
