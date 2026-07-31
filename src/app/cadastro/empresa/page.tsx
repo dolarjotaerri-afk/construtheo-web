@@ -6,8 +6,6 @@ import { FormEvent, useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import { buscarEnderecoPorCep } from "../../../lib/cepService";
 
-const steps = ["Dados básicos", "Contato", "Localização"];
-
 // helper pra pegar localização atual
 async function obterCoordenadasAtual(): Promise<{
   latitude: number;
@@ -395,40 +393,6 @@ export default function CadastroEmpresaPage() {
             reformando na sua região e destaque seus produtos e serviços.
           </p>
         </header>
-
-        {/* ETAPAS */}
-        <div
-          style={{
-            display: "flex",
-            gap: "6px",
-            padding: "6px",
-            borderRadius: "999px",
-            background: "#F1F5F9",
-            marginBottom: "22px",
-          }}
-        >
-          {steps.map((label, index) => {
-            const active = index === 0;
-            return (
-              <div
-                key={label}
-                style={{
-                  flex: 1,
-                  padding: "8px 0",
-                  textAlign: "center",
-                  borderRadius: "999px",
-                  fontSize: "0.8rem",
-                  fontWeight: active ? 600 : 500,
-                  background: active ? "#FFFFFF" : "transparent",
-                  color: active ? "#2563EB" : "#64748B",
-                  boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                }}
-              >
-                {label}
-              </div>
-            );
-          })}
-        </div>
 
         {/* FORMULÁRIO */}
         <form
