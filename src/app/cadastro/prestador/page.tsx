@@ -273,6 +273,7 @@ export default function CadastroPrestadorPage() {
           {
             id: userId,
             nome,
+            area: especialidade,
             especialidade,
             whatsapp,
             email,
