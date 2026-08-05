@@ -49,6 +49,7 @@ export default function PainelClientePage() {
     useState(false);
   const [carregandoPerfilProfissional, setCarregandoPerfilProfissional] =
     useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [empresaSelecionada, setEmpresaSelecionada] =
     useState<FeaturedCompany | null>(null);
@@ -84,6 +85,14 @@ export default function PainelClientePage() {
 
         router.replace("/login?tipo=cliente");
         return;
+      }
+
+      const role = (
+        session.user.app_metadata as { role?: string } | null
+      )?.role;
+
+      if (ativo) {
+        setIsAdmin(role === "admin");
       }
 
       const salvo = localStorage.getItem("construtheo_cliente_atual");
@@ -132,36 +141,65 @@ export default function PainelClientePage() {
 }, [router]);
 
   useEffect(() => {
-    if (!cliente?.cidade || !cliente?.estado) {
-      setEmpresasAprovadas([]);
-      setProfissionaisAprovados([]);
-      setCarregandoAprovados(false);
-      return;
-    }
-
     let ativo = true;
 
-    const cidadeCliente = cliente.cidade.trim().toLowerCase();
-    const estadoCliente = cliente.estado.trim().toUpperCase();
+    const cidadeCliente = cliente?.cidade?.trim().toLowerCase() || "";
+    const estadoCliente = cliente?.estado?.trim().toUpperCase() || "";
+    const possuiLocalizacaoCliente = Boolean(cidadeCliente && estadoCliente);
+
+    function normalizarStatus(valor: unknown) {
+      return String(valor || "")
+        .trim()
+        .replace(/::[a-zA-Z_][a-zA-Z0-9_]*/g, "")
+        .replace(/^['"]+|['"]+$/g, "")
+        .trim()
+        .toLowerCase();
+    }
+
+    function pertenceARegiao(
+      cidadeRegistro: unknown,
+      estadoRegistro: unknown,
+      localizacaoRegistro: unknown
+    ) {
+      // Somente o administrador pode visualizar todos os aprovados
+      // quando estiver sem cidade e estado.
+      if (!possuiLocalizacaoCliente) return isAdmin;
+
+      const cidade = String(cidadeRegistro || "").trim().toLowerCase();
+      const estado = String(estadoRegistro || "").trim().toUpperCase();
+      const localizacao = String(localizacaoRegistro || "")
+        .trim()
+        .toLowerCase();
+
+      const cidadeEncontrada =
+        cidade === cidadeCliente ||
+        localizacao.includes(cidadeCliente);
+
+      const estadoEncontrado =
+        !estado ||
+        estado === estadoCliente ||
+        localizacao.includes(estadoCliente.toLowerCase());
+
+      return cidadeEncontrada && estadoEncontrado;
+    }
 
     async function carregarCadastrosAprovados() {
       setCarregandoAprovados(true);
+
+      if (!possuiLocalizacaoCliente && !isAdmin) {
+        setEmpresasAprovadas([]);
+        setProfissionaisAprovados([]);
+        setCarregandoAprovados(false);
+        return;
+      }
 
       try {
         const [
           { data: empresasData, error: empresasError },
           { data: profissionaisData, error: profissionaisError },
         ] = await Promise.all([
-          supabase
-            .from("empresas")
-            .select("*")
-            .eq("status", "aprovado")
-            .limit(100),
-          supabase
-            .from("profissionais")
-            .select("*")
-            .eq("status", "aprovado")
-            .limit(100),
+          supabase.from("empresas").select("*").limit(500),
+          supabase.from("profissionais").select("*").limit(500),
         ]);
 
         if (empresasError) {
@@ -178,19 +216,15 @@ export default function PainelClientePage() {
         if (!ativo) return;
 
         const empresasMapeadas: EmpresaAprovada[] = (empresasData || [])
-          .filter((empresa: any) => {
-            const cidadeEmpresa = String(
-              empresa.cidade || empresa.localizacao || ""
-            ).toLowerCase();
-            const estadoEmpresa = String(empresa.estado || "").toUpperCase();
-
-            const mesmaCidade =
-              cidadeEmpresa.includes(cidadeCliente) ||
-              cidadeCliente.includes(cidadeEmpresa);
-            const mesmoEstado = !estadoEmpresa || estadoEmpresa === estadoCliente;
-
-            return mesmaCidade && mesmoEstado;
-          })
+          .filter(
+            (empresa: any) =>
+              normalizarStatus(empresa.status).includes("aprov") &&
+              pertenceARegiao(
+                empresa.cidade,
+                empresa.estado,
+                empresa.localizacao
+              )
+          )
           .map((empresa: any) => ({
             id: empresa.id,
             name:
@@ -210,10 +244,7 @@ export default function PainelClientePage() {
             cities: empresa.cidade ? [empresa.cidade] : [],
             state: empresa.estado || estadoCliente,
             badge: "✓ Empresa aprovada",
-            logo:
-              empresa.logo_url ||
-              empresa.logo ||
-              "/logos/deposito.png",
+            logo: empresa.logo_url || empresa.logo || "/logos/deposito.png",
             whatsapp: String(empresa.whatsapp || "").replace(/\D/g, ""),
             origem: "supabase",
           }));
@@ -221,22 +252,15 @@ export default function PainelClientePage() {
         const profissionaisMapeados: ProfissionalAprovado[] = (
           profissionaisData || []
         )
-          .filter((profissional: any) => {
-            const cidadeProfissional = String(
-              profissional.cidade || profissional.localizacao || ""
-            ).toLowerCase();
-            const estadoProfissional = String(
-              profissional.estado || ""
-            ).toUpperCase();
-
-            const mesmaCidade =
-              cidadeProfissional.includes(cidadeCliente) ||
-              cidadeCliente.includes(cidadeProfissional);
-            const mesmoEstado =
-              !estadoProfissional || estadoProfissional === estadoCliente;
-
-            return mesmaCidade && mesmoEstado;
-          })
+          .filter(
+            (profissional: any) =>
+              normalizarStatus(profissional.status).includes("aprov") &&
+              pertenceARegiao(
+                profissional.cidade,
+                profissional.estado,
+                profissional.localizacao
+              )
+          )
           .map((profissional: any) => {
             const especialidade =
               profissional.especialidade ||
@@ -258,7 +282,7 @@ export default function PainelClientePage() {
                 [profissional.cidade, profissional.estado]
                   .filter(Boolean)
                   .join(" - ") ||
-                "Atende sua região",
+                "Localização não informada",
               tag: especialidade,
               cities: profissional.cidade ? [profissional.cidade] : [],
               state: profissional.estado || estadoCliente,
@@ -285,10 +309,25 @@ export default function PainelClientePage() {
 
     carregarCadastrosAprovados();
 
+    const channel = supabase
+      .channel("painel-cliente-aprovados")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profissionais" },
+        carregarCadastrosAprovados
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "empresas" },
+        carregarCadastrosAprovados
+      )
+      .subscribe();
+
     return () => {
       ativo = false;
+      supabase.removeChannel(channel);
     };
-  }, [cliente?.cidade, cliente?.estado]);
+  }, [cliente?.cidade, cliente?.estado, isAdmin]);
 
   async function handleLogout() {
   await supabase.auth.signOut();
