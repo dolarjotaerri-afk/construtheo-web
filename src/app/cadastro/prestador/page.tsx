@@ -291,17 +291,20 @@ export default function CadastroPrestadorPage() {
         )
         .single();
 
-      if (profissionalError) {
-        console.error(
-          "Erro ao criar ou atualizar o perfil profissional:",
-          profissionalError
-        );
+if (profissionalError) {
+  console.error(
+    "Erro ao criar ou atualizar o perfil profissional:",
+    profissionalError
+  );
 
-        setErro(
-          "Não conseguimos salvar seu perfil profissional agora. Entre em contato com o suporte do Construthéo."
-        );
-        return;
-      }
+  setErro(
+    `Erro ao salvar perfil: ${profissionalError.message} | Código: ${
+      profissionalError.code || "sem código"
+    }`
+  );
+
+  return;
+}
 
       if (!profissional) {
         setErro("Não foi possível carregar os dados do perfil profissional.");
