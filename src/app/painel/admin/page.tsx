@@ -35,6 +35,55 @@ type Alerta = {
   descricao: string;
 };
 
+
+type ClienteAdmin = {
+  id: string;
+  nome?: string | null;
+  apelido?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  bairro?: string | null;
+  cep?: string | null;
+  created_at?: string | null;
+  status?: string | null;
+};
+
+type ProfissionalAdmin = {
+  id: string;
+  nome?: string | null;
+  apelido?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  funcao?: string | null;
+  area?: string | null;
+  especialidade?: string | null;
+  localizacao?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  bairro?: string | null;
+  created_at?: string | null;
+  status?: string | null;
+};
+
+type EmpresaAdmin = {
+  id: string;
+  nome?: string | null;
+  razao_social?: string | null;
+  nome_fantasia?: string | null;
+  email?: string | null;
+  whatsapp?: string | null;
+  tipo?: string | null;
+  categoria?: string | null;
+  localizacao?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  bairro?: string | null;
+  created_at?: string | null;
+  status?: string | null;
+};
+
 // ---------- MOCKS (podem virar dados reais depois) ----------
 
 const atividadesRecentes: Atividade[] = [
@@ -108,10 +157,19 @@ export default function PainelAdminPage() {
 
   const atividadesRef = useRef<HTMLDivElement | null>(null);
   const pendenciasRef = useRef<HTMLDivElement | null>(null);
+  const profissionaisRef = useRef<HTMLDivElement | null>(null);
+  const empresasRef = useRef<HTMLDivElement | null>(null);
+  const clientesRef = useRef<HTMLDivElement | null>(null);
 
   const [pendencias, setPendencias] = useState<Pendencia[]>([]);
   const [carregandoPendencias, setCarregandoPendencias] =
     useState(false);
+
+  const [clientes, setClientes] = useState<ClienteAdmin[]>([]);
+  const [profissionais, setProfissionais] = useState<ProfissionalAdmin[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaAdmin[]>([]);
+  const [carregandoCadastros, setCarregandoCadastros] = useState(true);
+  const [erroCadastros, setErroCadastros] = useState<string | null>(null);
 
   const [verificandoAdmin, setVerificandoAdmin] = useState(true);
     // métricas reais
@@ -229,6 +287,84 @@ export default function PainelAdminPage() {
     };
 
     carregarMetricas();
+  }, [verificandoAdmin]);
+
+  // --------- Carrega TODOS os cadastros para os carrosséis do admin ---------
+  useEffect(() => {
+    if (verificandoAdmin) return;
+
+    let ativo = true;
+
+    const ordenarMaisRecentes = <T extends { created_at?: string | null }>(
+      itens: T[]
+    ) =>
+      [...itens].sort((a, b) => {
+        const dataA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dataB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dataB - dataA;
+      });
+
+    const carregarCadastros = async () => {
+      setCarregandoCadastros(true);
+      setErroCadastros(null);
+
+      try {
+        const [
+          { data: clientesData, error: clientesError },
+          { data: profissionaisData, error: profissionaisError },
+          { data: empresasData, error: empresasError },
+        ] = await Promise.all([
+          supabase.from("clientes").select("*").limit(500),
+          supabase.from("profissionais").select("*").limit(500),
+          supabase.from("empresas").select("*").limit(500),
+        ]);
+
+        const erros = [
+          clientesError?.message,
+          profissionaisError?.message,
+          empresasError?.message,
+        ].filter(Boolean);
+
+        if (erros.length > 0) {
+          console.error("Erro ao carregar cadastros:", erros);
+          setErroCadastros(
+            "Alguns cadastros não puderam ser carregados neste momento."
+          );
+        }
+
+        if (!ativo) return;
+
+        setClientes(
+          ordenarMaisRecentes((clientesData || []) as ClienteAdmin[])
+        );
+        setProfissionais(
+          ordenarMaisRecentes(
+            (profissionaisData || []) as ProfissionalAdmin[]
+          )
+        );
+        setEmpresas(
+          ordenarMaisRecentes((empresasData || []) as EmpresaAdmin[])
+        );
+      } catch (error) {
+        console.error("Erro geral ao carregar cadastros:", error);
+
+        if (ativo) {
+          setErroCadastros(
+            "Não foi possível carregar a lista de usuários agora."
+          );
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoCadastros(false);
+        }
+      }
+    };
+
+    carregarCadastros();
+
+    return () => {
+      ativo = false;
+    };
   }, [verificandoAdmin]);
 
   // --------- Carrega pendências reais do Supabase ---------
@@ -629,6 +765,131 @@ export default function PainelAdminPage() {
             </div>
           )}
         </section>
+
+        {/* TODOS OS PROFISSIONAIS CADASTRADOS */}
+        <section style={{ padding: "12px 10px", borderRadius: "18px", background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <div>
+              <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#1E3A8A" }}>Todos os profissionais</h2>
+              <p style={{ fontSize: "0.72rem", color: "#64748B" }}>{profissionais.length} cadastro(s) na plataforma</p>
+            </div>
+            <span style={{ padding: "4px 8px", borderRadius: "999px", background: "#DBEAFE", color: "#1D4ED8", fontSize: "0.7rem", fontWeight: 700 }}>Brasil inteiro</span>
+          </div>
+          <div ref={profissionaisRef} className="carrossel-admin" style={{ display: "flex", overflowX: "auto", gap: "10px", paddingBottom: "4px", scrollbarWidth: "none" }}>
+            {carregandoCadastros ? (
+              <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Carregando profissionais...</div>
+            ) : profissionais.length === 0 ? (
+              <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Nenhum profissional cadastrado.</div>
+            ) : (
+              profissionais.map((profissional) => {
+                const nome = profissional.apelido || profissional.nome || "Profissional sem nome";
+                const profissao = profissional.especialidade || profissional.funcao || profissional.area || "Profissão não informada";
+                const localizacao = profissional.localizacao || [profissional.cidade, profissional.estado].filter(Boolean).join(" - ") || "Localização não informada";
+                return (
+                  <article key={profissional.id} style={{ minWidth: "78%", maxWidth: "78%", padding: "12px", borderRadius: "16px", background: "#FFFFFF", border: "1px solid #BFDBFE", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+                    <span style={{ display: "inline-block", marginBottom: "5px", padding: "3px 7px", borderRadius: "999px", background: profissional.status === "bloqueado" ? "#FEE2E2" : "#DCFCE7", color: profissional.status === "bloqueado" ? "#B91C1C" : "#15803D", fontSize: "0.68rem", fontWeight: 700 }}>{profissional.status === "bloqueado" ? "Bloqueado" : profissional.status || "Cadastrado"}</span>
+                    <h3 style={{ fontSize: "0.88rem", fontWeight: 700, color: "#111827" }}>{nome}</h3>
+                    <p style={{ fontSize: "0.76rem", color: "#2563EB" }}>{profissao}</p>
+                    <p style={{ marginTop: "4px", fontSize: "0.74rem", color: "#4B5563" }}>{localizacao}</p>
+                    {profissional.whatsapp && <p style={{ fontSize: "0.72rem", color: "#6B7280" }}>WhatsApp: {profissional.whatsapp}</p>}
+                    {profissional.email && <p style={{ fontSize: "0.7rem", color: "#6B7280", overflowWrap: "anywhere" }}>{profissional.email}</p>}
+                    <p style={{ marginTop: "6px", fontSize: "0.68rem", color: "#9CA3AF" }}>Cadastro: {profissional.created_at ? new Date(profissional.created_at).toLocaleDateString("pt-BR") : "data não informada"}</p>
+                  </article>
+                );
+              })
+            )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "5px" }}>
+            <button type="button" onClick={() => scrollCarrossel(profissionaisRef, "left")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}>◀</button>
+            <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Arraste para acompanhar todos</span>
+            <button type="button" onClick={() => scrollCarrossel(profissionaisRef, "right")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}>▶</button>
+          </div>
+        </section>
+
+        {/* TODAS AS EMPRESAS CADASTRADAS */}
+        <section style={{ padding: "12px 10px", borderRadius: "18px", background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <div>
+              <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#166534" }}>Todas as empresas</h2>
+              <p style={{ fontSize: "0.72rem", color: "#64748B" }}>{empresas.length} cadastro(s) na plataforma</p>
+            </div>
+            <span style={{ padding: "4px 8px", borderRadius: "999px", background: "#DCFCE7", color: "#15803D", fontSize: "0.7rem", fontWeight: 700 }}>Sem filtro regional</span>
+          </div>
+          <div ref={empresasRef} className="carrossel-admin" style={{ display: "flex", overflowX: "auto", gap: "10px", paddingBottom: "4px", scrollbarWidth: "none" }}>
+            {carregandoCadastros ? (
+              <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Carregando empresas...</div>
+            ) : empresas.length === 0 ? (
+              <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Nenhuma empresa cadastrada.</div>
+            ) : (
+              empresas.map((empresa) => {
+                const nome = empresa.nome_fantasia || empresa.nome || empresa.razao_social || "Empresa sem nome";
+                const categoria = empresa.categoria || empresa.tipo || "Categoria não informada";
+                const localizacao = empresa.localizacao || [empresa.cidade, empresa.estado].filter(Boolean).join(" - ") || "Localização não informada";
+                return (
+                  <article key={empresa.id} style={{ minWidth: "78%", maxWidth: "78%", padding: "12px", borderRadius: "16px", background: "#FFFFFF", border: "1px solid #BBF7D0", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+                    <span style={{ display: "inline-block", marginBottom: "5px", padding: "3px 7px", borderRadius: "999px", background: empresa.status === "bloqueado" ? "#FEE2E2" : "#DCFCE7", color: empresa.status === "bloqueado" ? "#B91C1C" : "#15803D", fontSize: "0.68rem", fontWeight: 700 }}>{empresa.status === "bloqueado" ? "Bloqueada" : empresa.status || "Cadastrada"}</span>
+                    <h3 style={{ fontSize: "0.88rem", fontWeight: 700, color: "#111827" }}>{nome}</h3>
+                    <p style={{ fontSize: "0.76rem", color: "#15803D" }}>{categoria}</p>
+                    <p style={{ marginTop: "4px", fontSize: "0.74rem", color: "#4B5563" }}>{localizacao}</p>
+                    {empresa.whatsapp && <p style={{ fontSize: "0.72rem", color: "#6B7280" }}>WhatsApp: {empresa.whatsapp}</p>}
+                    {empresa.email && <p style={{ fontSize: "0.7rem", color: "#6B7280", overflowWrap: "anywhere" }}>{empresa.email}</p>}
+                    <p style={{ marginTop: "6px", fontSize: "0.68rem", color: "#9CA3AF" }}>Cadastro: {empresa.created_at ? new Date(empresa.created_at).toLocaleDateString("pt-BR") : "data não informada"}</p>
+                  </article>
+                );
+              })
+            )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "5px" }}>
+            <button type="button" onClick={() => scrollCarrossel(empresasRef, "left")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}>◀</button>
+            <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Arraste para acompanhar todas</span>
+            <button type="button" onClick={() => scrollCarrossel(empresasRef, "right")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}>▶</button>
+          </div>
+        </section>
+
+        {/* TODOS OS CLIENTES CADASTRADOS */}
+        <section style={{ padding: "12px 10px", borderRadius: "18px", background: "#FFF7ED", border: "1px solid #FED7AA" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <div>
+              <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#9A3412" }}>Todos os clientes</h2>
+              <p style={{ fontSize: "0.72rem", color: "#64748B" }}>{clientes.length} cadastro(s) na plataforma</p>
+            </div>
+            <span style={{ padding: "4px 8px", borderRadius: "999px", background: "#FFEDD5", color: "#C2410C", fontSize: "0.7rem", fontWeight: 700 }}>Base completa</span>
+          </div>
+          <div ref={clientesRef} className="carrossel-admin" style={{ display: "flex", overflowX: "auto", gap: "10px", paddingBottom: "4px", scrollbarWidth: "none" }}>
+            {carregandoCadastros ? (
+              <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Carregando clientes...</div>
+            ) : clientes.length === 0 ? (
+              <div style={{ fontSize: "0.8rem", color: "#64748B" }}>Nenhum cliente cadastrado.</div>
+            ) : (
+              clientes.map((cliente) => {
+                const nome = cliente.apelido || cliente.nome || "Cliente sem nome";
+                const localizacao = [cliente.cidade, cliente.estado].filter(Boolean).join(" - ") || "Localização não informada";
+                return (
+                  <article key={cliente.id} style={{ minWidth: "78%", maxWidth: "78%", padding: "12px", borderRadius: "16px", background: "#FFFFFF", border: "1px solid #FED7AA", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+                    <span style={{ display: "inline-block", marginBottom: "5px", padding: "3px 7px", borderRadius: "999px", background: cliente.status === "bloqueado" ? "#FEE2E2" : "#FFEDD5", color: cliente.status === "bloqueado" ? "#B91C1C" : "#C2410C", fontSize: "0.68rem", fontWeight: 700 }}>{cliente.status === "bloqueado" ? "Bloqueado" : cliente.status || "Cliente"}</span>
+                    <h3 style={{ fontSize: "0.88rem", fontWeight: 700, color: "#111827" }}>{nome}</h3>
+                    <p style={{ marginTop: "3px", fontSize: "0.74rem", color: "#4B5563" }}>{localizacao}</p>
+                    {cliente.bairro && <p style={{ fontSize: "0.72rem", color: "#6B7280" }}>Bairro: {cliente.bairro}</p>}
+                    {cliente.whatsapp && <p style={{ fontSize: "0.72rem", color: "#6B7280" }}>WhatsApp: {cliente.whatsapp}</p>}
+                    {cliente.email && <p style={{ fontSize: "0.7rem", color: "#6B7280", overflowWrap: "anywhere" }}>{cliente.email}</p>}
+                    <p style={{ marginTop: "6px", fontSize: "0.68rem", color: "#9CA3AF" }}>Cadastro: {cliente.created_at ? new Date(cliente.created_at).toLocaleDateString("pt-BR") : "data não informada"}</p>
+                  </article>
+                );
+              })
+            )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "5px" }}>
+            <button type="button" onClick={() => scrollCarrossel(clientesRef, "left")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}>◀</button>
+            <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Arraste para acompanhar todos</span>
+            <button type="button" onClick={() => scrollCarrossel(clientesRef, "right")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "#64748B" }}>▶</button>
+          </div>
+        </section>
+
+        {erroCadastros && (
+          <div style={{ padding: "9px 10px", borderRadius: "12px", background: "#FEF2F2", color: "#B91C1C", fontSize: "0.76rem" }}>
+            {erroCadastros}
+          </div>
+        )}
 
         {/* ATIVIDADES RECENTES */}
         <section
