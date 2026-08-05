@@ -244,7 +244,7 @@ export default function PainelClientePage() {
             cities: empresa.cidade ? [empresa.cidade] : [],
             state: empresa.estado || estadoCliente,
             badge: "✓ Empresa aprovada",
-            logo: empresa.logo_url || empresa.logo || "/logos/deposito.png",
+            logo: empresa.logo_url || empresa.logo || "",
             whatsapp: String(empresa.whatsapp || "").replace(/\D/g, ""),
             origem: "supabase",
           }));
@@ -814,17 +814,23 @@ export default function PainelClientePage() {
                   style={companyCardStyle}
                 >
                   <div style={logoCircleStyle}>
-                    <Image
-                      src={empresa.logo}
-                      alt={empresa.name}
-                      width={40}
-                      height={40}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
+                    {empresa.logo ? (
+                      <Image
+                        src={empresa.logo}
+                        alt={empresa.name}
+                        width={40}
+                        height={40}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div style={defaultCompanyLogoStyle}>
+                        <span style={defaultCompanyLogoTextStyle}>CT</span>
+                      </div>
+                    )}
                   </div>
 
                   <p style={companyNameStyle}>{empresa.name}</p>
@@ -961,17 +967,30 @@ export default function PainelClientePage() {
             </div>
 
             <div style={modalLogoStyle}>
-              <Image
-                src={empresaSelecionada.logo}
-                alt={empresaSelecionada.name}
-                width={74}
-                height={74}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
+              {empresaSelecionada.logo ? (
+                <Image
+                  src={empresaSelecionada.logo}
+                  alt={empresaSelecionada.name}
+                  width={74}
+                  height={74}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div style={defaultCompanyLogoStyle}>
+                  <span
+                    style={{
+                      ...defaultCompanyLogoTextStyle,
+                      fontSize: "1.05rem",
+                    }}
+                  >
+                    CT
+                  </span>
+                </div>
+              )}
             </div>
 
             <h2 style={modalTitleStyle}>{empresaSelecionada.name}</h2>
@@ -1130,6 +1149,22 @@ const logoCircleStyle: CSSProperties = {
   justifyContent: "center",
   marginBottom: 10,
   overflow: "hidden",
+};
+
+const defaultCompanyLogoStyle: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  background: "linear-gradient(145deg, #DBEAFE, #EFF6FF)",
+};
+
+const defaultCompanyLogoTextStyle: CSSProperties = {
+  fontSize: "0.72rem",
+  fontWeight: 900,
+  color: "#2563EB",
+  letterSpacing: "-0.02em",
 };
 
 const companyNameStyle: CSSProperties = {
