@@ -585,6 +585,10 @@ export default function PainelAdminPage() {
                       </p>
                     )}
 
+                    <p style={cardMetaStyle}>
+                      Cadastro: {formatarData(pendencia.created_at)}
+                    </p>
+
                     <div style={actionRowStyle}>
                       <button
                         type="button"
