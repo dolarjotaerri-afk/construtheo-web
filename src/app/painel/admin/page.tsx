@@ -348,7 +348,6 @@ export default function PainelAdminPage() {
         .from(tabela)
         .update({
           status: novoStatus,
-          updated_at: new Date().toISOString(),
         })
         .eq("id", pendencia.id)
         .select("id, status")
