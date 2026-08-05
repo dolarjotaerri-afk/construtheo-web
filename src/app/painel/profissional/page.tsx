@@ -35,6 +35,8 @@ export default function PainelProfissionalPage() {
   const [profissional, setProfissional] = useState<ProfissionalResumo | null>(
     null
   );
+  const [possuiPerfilCliente, setPossuiPerfilCliente] = useState(false);
+  const [carregandoPerfilCliente, setCarregandoPerfilCliente] = useState(true);
 
   const [obrasGaleria, setObrasGaleria] = useState<ObraGaleria[]>([]);
   const [carregandoObrasGaleria, setCarregandoObrasGaleria] = useState(false);
@@ -70,6 +72,61 @@ export default function PainelProfissionalPage() {
       whatsapp: "(11) 98888-0000",
       email: "profissional@demo.com",
     });
+  }, []);
+
+  // Verifica se a mesma conta também possui perfil de cliente
+  useEffect(() => {
+    let ativo = true;
+
+    async function verificarPerfilCliente() {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          console.error("Erro ao verificar usuário conectado:", userError);
+        }
+
+        if (!user) {
+          if (ativo) {
+            setPossuiPerfilCliente(false);
+          }
+          return;
+        }
+
+        const { data: cliente, error: clienteError } = await supabase
+          .from("clientes")
+          .select("id")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (clienteError) {
+          console.error("Erro ao verificar perfil de cliente:", clienteError);
+        }
+
+        if (ativo) {
+          setPossuiPerfilCliente(Boolean(cliente));
+        }
+      } catch (error) {
+        console.error("Erro ao consultar perfil de cliente:", error);
+
+        if (ativo) {
+          setPossuiPerfilCliente(false);
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoPerfilCliente(false);
+        }
+      }
+    }
+
+    verificarPerfilCliente();
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   const isDemo = !profissional?.id;
@@ -223,6 +280,75 @@ export default function PainelProfissionalPage() {
             {isDemo ? "Conta demo" : "Profissional conectado"}
           </span>
         </header>
+
+        {/* TROCA DE PERFIL */}
+        {!isDemo && (
+          <section
+            style={{
+              marginBottom: 16,
+              padding: "12px",
+              borderRadius: 18,
+              border: "1px solid #BFDBFE",
+              background: "#EFF6FF",
+            }}
+          >
+            {carregandoPerfilCliente ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.78rem",
+                  color: "#6B7280",
+                }}
+              >
+                Verificando seus acessos...
+              </p>
+            ) : possuiPerfilCliente ? (
+              <>
+                <p
+                  style={{
+                    margin: "0 0 8px",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    color: "#1E3A8A",
+                  }}
+                >
+                  Você também possui um perfil de cliente
+                </p>
+
+                <Link
+                  href="/painel/cliente"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 999,
+                    background: "#2563EB",
+                    color: "#FFFFFF",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  Acessar como cliente
+                </Link>
+              </>
+            ) : (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.78rem",
+                  color: "#4B5563",
+                  lineHeight: 1.4,
+                }}
+              >
+                Esta conta ainda não possui perfil de cliente.
+              </p>
+            )}
+          </section>
+        )}
 
         {/* RESUMO MÉTRICAS (demo + real de obras em andamento) */}
         <section
