@@ -99,6 +99,7 @@ export default function PainelAdminPage() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [atualizandoId, setAtualizandoId] = useState<string | null>(null);
+  const [sucesso, setSucesso] = useState<string | null>(null);
 
   const [clientes, setClientes] = useState<UsuarioAdmin[]>([]);
   const [profissionais, setProfissionais] = useState<UsuarioAdmin[]>([]);
@@ -258,6 +259,33 @@ export default function PainelAdminPage() {
     carregarDados();
   }, [verificandoAdmin, carregarDados]);
 
+  useEffect(() => {
+    if (verificandoAdmin) return;
+
+    const channel = supabase
+      .channel("painel-admin-cadastros")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "clientes" },
+        carregarDados
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profissionais" },
+        carregarDados
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "empresas" },
+        carregarDados
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [verificandoAdmin, carregarDados]);
+
   const pendencias = useMemo<Pendencia[]>(() => {
     return [...profissionais, ...empresas]
       .filter(
@@ -304,12 +332,13 @@ export default function PainelAdminPage() {
 
   async function atualizarStatus(
     pendencia: Pendencia,
-    novoStatus: "aprovado" | "bloqueado"
+    novoStatus: "aprovado" | "recusado"
   ) {
     if (atualizandoId) return;
 
     setAtualizandoId(pendencia.id);
     setErro(null);
+    setSucesso(null);
 
     const tabela =
       pendencia.tipo === "profissional" ? "profissionais" : "empresas";
@@ -317,7 +346,10 @@ export default function PainelAdminPage() {
     try {
       const { data, error } = await supabase
         .from(tabela)
-        .update({ status: novoStatus })
+        .update({
+          status: novoStatus,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", pendencia.id)
         .select("id, status")
         .single();
@@ -349,6 +381,14 @@ export default function PainelAdminPage() {
           )
         );
       }
+
+      setSucesso(
+        novoStatus === "aprovado"
+          ? `${pendencia.nome} foi aprovado com sucesso.`
+          : `${pendencia.nome} foi recusado com sucesso.`
+      );
+
+      await carregarDados();
     } catch (error: any) {
       console.error("Erro ao atualizar cadastro:", error);
       setErro(
@@ -456,6 +496,23 @@ export default function PainelAdminPage() {
 
         {erro && <div style={errorStyle}>{erro}</div>}
 
+        {sucesso && (
+          <div
+            style={{
+              marginBottom: 16,
+              padding: "10px 12px",
+              borderRadius: 14,
+              background: "#DCFCE7",
+              color: "#15803D",
+              fontSize: "0.75rem",
+              lineHeight: 1.4,
+              fontWeight: 700,
+            }}
+          >
+            {sucesso}
+          </div>
+        )}
+
         <section style={sectionStyle}>
           <div style={sectionHeaderStyle}>
             <div>
@@ -532,15 +589,15 @@ export default function PainelAdminPage() {
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
-                          atualizarStatus(pendencia, "bloqueado");
+                          atualizarStatus(pendencia, "recusado");
                         }}
                         style={{
-                          ...blockButtonStyle,
+                          ...rejectButtonStyle,
                           opacity: atualizando ? 0.65 : 1,
                           touchAction: "manipulation",
                         }}
                       >
-                        Bloquear
+                        Recusar
                       </button>
                     </div>
                   </article>
@@ -970,7 +1027,7 @@ const approveButtonStyle: CSSProperties = {
   cursor: "pointer",
 };
 
-const blockButtonStyle: CSSProperties = {
+const rejectButtonStyle: CSSProperties = {
   minHeight: 46,
   border: "none",
   borderRadius: 999,
@@ -1075,7 +1132,7 @@ function statusTag(status?: string | null): CSSProperties {
   const config =
     normalizado === "aprovado"
       ? { background: "#DCFCE7", color: "#15803D" }
-      : normalizado === "bloqueado"
+      : normalizado === "bloqueado" || normalizado === "recusado"
       ? { background: "#FEE2E2", color: "#B91C1C" }
       : normalizado === "pendente"
       ? { background: "#FEF3C7", color: "#B45309" }
