@@ -26,7 +26,10 @@ export default function CadastroPrestadorPage() {
 
   async function handleCepBlur() {
     const cepLimpo = cep.replace(/\D/g, "");
-    if (cepLimpo.length !== 8) return;
+
+    if (cepLimpo.length !== 8) {
+      return;
+    }
 
     try {
       setBuscandoCep(true);
@@ -38,7 +41,7 @@ export default function CadastroPrestadorPage() {
       setEstado(endereco.estado || "");
       setBairro(endereco.bairro || "");
     } catch (error: unknown) {
-      console.error(error);
+      console.error("Erro ao buscar CEP:", error);
       setErro("Não foi possível buscar o endereço pelo CEP.");
     } finally {
       setBuscandoCep(false);
@@ -82,80 +85,193 @@ export default function CadastroPrestadorPage() {
         setErro(
           "Preencha nome, especialidade, WhatsApp, e-mail e CEP para continuar."
         );
-        setLoading(false);
         return;
       }
 
       if (senha.length < 6) {
         setErro("A senha deve ter pelo menos 6 caracteres.");
-        setLoading(false);
         return;
       }
 
       if (senha !== confirmarSenha) {
         setErro("As senhas não conferem.");
-        setLoading(false);
         return;
       }
 
-      const tabelasUsuarios = [
-        "clientes",
-        "profissionais",
-        "empresas",
-      ] as const;
+      let userId: string | null = null;
 
-      const verificacoes = await Promise.all(
-        tabelasUsuarios.map((tabela) =>
-          supabase
-            .from(tabela)
-            .select("id", { count: "exact", head: true })
-            .eq("email", email)
-        )
-      );
+      /*
+       * 1. Verifica se já existe um usuário conectado.
+       * Se existir, o mesmo usuário poderá ter perfil de cliente
+       * e perfil profissional usando o mesmo UUID.
+       */
+      const {
+        data: { user: usuarioLogado },
+        error: usuarioLogadoError,
+      } = await supabase.auth.getUser();
 
-      const emailJaExiste = verificacoes.some(({ count }) => (count ?? 0) > 0);
-
-      if (emailJaExiste) {
-        setErro(
-          "Este e-mail já está cadastrado. Entre na sua conta ou recupere sua senha."
+      if (usuarioLogadoError) {
+        console.error(
+          "Erro ao consultar o usuário conectado:",
+          usuarioLogadoError
         );
-        setLoading(false);
-        return;
       }
 
-      const { data: signUpData, error: signUpError } =
-        await supabase.auth.signUp({
-          email,
-          password: senha,
-          options: {
-            data: {
-              tipo: "profissional",
-              nome,
-              especialidade,
-            },
-          },
+      if (usuarioLogado) {
+        const emailUsuarioLogado = usuarioLogado.email?.trim().toLowerCase();
+
+        if (emailUsuarioLogado && emailUsuarioLogado !== email) {
+          setErro(
+            `Você já está conectado com o e-mail ${emailUsuarioLogado}. Use esse mesmo e-mail para adicionar seu perfil profissional.`
+          );
+          return;
+        }
+
+        userId = usuarioLogado.id;
+      } else {
+        /*
+         * 2. Como não há usuário conectado, verifica se o e-mail
+         * já aparece em alguma das tabelas públicas do aplicativo.
+         */
+        const tabelasUsuarios = [
+          "clientes",
+          "profissionais",
+          "empresas",
+        ] as const;
+
+        const verificacoes = await Promise.all(
+          tabelasUsuarios.map((tabela) =>
+            supabase
+              .from(tabela)
+              .select("id", { count: "exact", head: true })
+              .eq("email", email)
+          )
+        );
+
+        verificacoes.forEach(({ error }, index) => {
+          if (error) {
+            console.error(
+              `Erro ao verificar o e-mail na tabela ${tabelasUsuarios[index]}:`,
+              error
+            );
+          }
         });
 
-      if (signUpError) {
-        console.error(signUpError);
-        setErro(signUpError.message || "Não foi possível criar sua conta.");
-        setLoading(false);
+        const emailJaExiste = verificacoes.some(
+          ({ count }) => (count ?? 0) > 0
+        );
+
+        if (emailJaExiste) {
+          /*
+           * 3. O e-mail já pertence a uma conta do Construthéo.
+           * Tenta autenticar com a senha informada e reutiliza o mesmo usuário.
+           */
+          const { data: loginData, error: loginError } =
+            await supabase.auth.signInWithPassword({
+              email,
+              password: senha,
+            });
+
+          if (loginError || !loginData.user) {
+            console.error(
+              "Não foi possível acessar a conta já existente:",
+              loginError
+            );
+
+            setErro(
+              "Este e-mail já possui uma conta no Construthéo. Confira sua senha ou recupere o acesso para adicionar o perfil profissional."
+            );
+            return;
+          }
+
+          userId = loginData.user.id;
+        } else {
+          /*
+           * 4. O e-mail ainda não existe nas tabelas do aplicativo.
+           * Cria uma nova conta no Supabase Auth.
+           */
+          const { data: signUpData, error: signUpError } =
+            await supabase.auth.signUp({
+              email,
+              password: senha,
+              options: {
+                data: {
+                  tipo: "profissional",
+                  nome,
+                  especialidade,
+                },
+              },
+            });
+
+          if (signUpError) {
+            console.error("Erro ao criar a conta:", signUpError);
+
+            const mensagemErro = signUpError.message.toLowerCase();
+
+            if (
+              mensagemErro.includes("already registered") ||
+              mensagemErro.includes("already exists")
+            ) {
+              setErro(
+                "Este e-mail já possui uma conta. Entre com sua senha ou recupere o acesso para adicionar o perfil profissional."
+              );
+            } else {
+              setErro(
+                signUpError.message || "Não foi possível criar sua conta."
+              );
+            }
+
+            return;
+          }
+
+          const novoUsuario = signUpData.user;
+
+          /*
+           * Em algumas configurações do Supabase, uma tentativa de cadastro
+           * com e-mail já existente pode retornar um usuário sem identidades,
+           * em vez de retornar um erro explícito.
+           */
+          if (
+            !novoUsuario ||
+            (Array.isArray(novoUsuario.identities) &&
+              novoUsuario.identities.length === 0)
+          ) {
+            setErro(
+              "Este e-mail já possui uma conta. Entre com sua senha ou recupere o acesso para adicionar o perfil profissional."
+            );
+            return;
+          }
+
+          /*
+           * Se a confirmação de e-mail estiver ativada, o Supabase pode criar
+           * o usuário sem iniciar uma sessão. Nesse caso, uma política RLS pode
+           * impedir a criação imediata do perfil profissional.
+           */
+          if (!signUpData.session) {
+            setErro(
+              "Sua conta foi criada. Confirme o e-mail recebido e entre na sua conta para concluir o perfil profissional."
+            );
+            return;
+          }
+
+          userId = novoUsuario.id;
+        }
+      }
+
+      if (!userId) {
+        setErro("Não foi possível identificar sua conta.");
         return;
       }
 
-      const user = signUpData.user;
-
-      if (!user) {
-        setErro("Não foi possível concluir a criação do usuário.");
-        setLoading(false);
-        return;
-      }
-
+      /*
+       * 5. Cria ou atualiza somente o perfil profissional.
+       * Não cria uma segunda conta de autenticação.
+       */
       const { data: profissional, error: profissionalError } = await supabase
         .from("profissionais")
-        .insert([
+        .upsert(
           {
-            id: user.id,
+            id: userId,
             nome,
             especialidade,
             whatsapp,
@@ -166,18 +282,29 @@ export default function CadastroPrestadorPage() {
             bairro: bairroFinal || null,
             localizacao,
           },
-        ])
+          {
+            onConflict: "id",
+          }
+        )
         .select(
           "id, nome, especialidade, whatsapp, email, cep, cidade, estado, bairro, localizacao"
         )
         .single();
 
       if (profissionalError) {
-        console.error(profissionalError);
-        setErro(
-          "Sua conta foi criada, mas não conseguimos salvar o perfil profissional. Entre em contato com o suporte."
+        console.error(
+          "Erro ao criar ou atualizar o perfil profissional:",
+          profissionalError
         );
-        setLoading(false);
+
+        setErro(
+          "Não conseguimos salvar seu perfil profissional agora. Entre em contato com o suporte do Construthéo."
+        );
+        return;
+      }
+
+      if (!profissional) {
+        setErro("Não foi possível carregar os dados do perfil profissional.");
         return;
       }
 
@@ -216,9 +343,10 @@ export default function CadastroPrestadorPage() {
       }
 
       router.push(PAINEL_PROFISSIONAL);
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      console.error("Erro inesperado no cadastro profissional:", error);
       setErro("Ocorreu um erro inesperado. Tente novamente.");
+    } finally {
       setLoading(false);
     }
   }
@@ -349,7 +477,7 @@ export default function CadastroPrestadorPage() {
             type="password"
             value={senha}
             onChange={setSenha}
-            autoComplete="new-password"
+            autoComplete="current-password"
           />
 
           <Campo
@@ -359,7 +487,7 @@ export default function CadastroPrestadorPage() {
             type="password"
             value={confirmarSenha}
             onChange={setConfirmarSenha}
-            autoComplete="new-password"
+            autoComplete="current-password"
           />
 
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -452,7 +580,9 @@ export default function CadastroPrestadorPage() {
               cursor: loading ? "default" : "pointer",
             }}
           >
-            {loading ? "Criando seu perfil..." : "Criar meu perfil profissional"}
+            {loading
+              ? "Criando seu perfil..."
+              : "Criar meu perfil profissional"}
           </button>
 
           <p
