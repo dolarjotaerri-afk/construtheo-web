@@ -28,6 +28,19 @@ type ClienteResumo = {
   aceita_ofertas_whatsapp?: boolean;
 };
 
+
+type EmpresaAprovada = FeaturedCompany & {
+  id: string;
+  origem: "supabase";
+};
+
+type ProfissionalAprovado = FeaturedProfessional & {
+  id: string;
+  nomeReal: string;
+  whatsapp?: string;
+  origem: "supabase";
+};
+
 export default function PainelClientePage() {
   const router = useRouter();
   const [cliente, setCliente] = useState<ClienteResumo | null>(null);
@@ -42,6 +55,14 @@ export default function PainelClientePage() {
 
   const [profissionalSelecionado, setProfissionalSelecionado] =
     useState<FeaturedProfessional | null>(null);
+
+  const [empresasAprovadas, setEmpresasAprovadas] = useState<
+    EmpresaAprovada[]
+  >([]);
+  const [profissionaisAprovados, setProfissionaisAprovados] = useState<
+    ProfissionalAprovado[]
+  >([]);
+  const [carregandoAprovados, setCarregandoAprovados] = useState(true);
 
   useEffect(() => {
   let ativo = true;
@@ -109,6 +130,166 @@ export default function PainelClientePage() {
     ativo = false;
   };
 }, [router]);
+
+  useEffect(() => {
+    if (!cliente?.cidade || !cliente?.estado) {
+      setEmpresasAprovadas([]);
+      setProfissionaisAprovados([]);
+      setCarregandoAprovados(false);
+      return;
+    }
+
+    let ativo = true;
+
+    const cidadeCliente = cliente.cidade.trim().toLowerCase();
+    const estadoCliente = cliente.estado.trim().toUpperCase();
+
+    async function carregarCadastrosAprovados() {
+      setCarregandoAprovados(true);
+
+      try {
+        const [
+          { data: empresasData, error: empresasError },
+          { data: profissionaisData, error: profissionaisError },
+        ] = await Promise.all([
+          supabase
+            .from("empresas")
+            .select("*")
+            .eq("status", "aprovado")
+            .limit(100),
+          supabase
+            .from("profissionais")
+            .select("*")
+            .eq("status", "aprovado")
+            .limit(100),
+        ]);
+
+        if (empresasError) {
+          console.error("Erro ao carregar empresas aprovadas:", empresasError);
+        }
+
+        if (profissionaisError) {
+          console.error(
+            "Erro ao carregar profissionais aprovados:",
+            profissionaisError
+          );
+        }
+
+        if (!ativo) return;
+
+        const empresasMapeadas: EmpresaAprovada[] = (empresasData || [])
+          .filter((empresa: any) => {
+            const cidadeEmpresa = String(
+              empresa.cidade || empresa.localizacao || ""
+            ).toLowerCase();
+            const estadoEmpresa = String(empresa.estado || "").toUpperCase();
+
+            const mesmaCidade =
+              cidadeEmpresa.includes(cidadeCliente) ||
+              cidadeCliente.includes(cidadeEmpresa);
+            const mesmoEstado = !estadoEmpresa || estadoEmpresa === estadoCliente;
+
+            return mesmaCidade && mesmoEstado;
+          })
+          .map((empresa: any) => ({
+            id: empresa.id,
+            name:
+              empresa.nome_fantasia ||
+              empresa.nome ||
+              empresa.razao_social ||
+              "Empresa cadastrada",
+            category:
+              empresa.categoria ||
+              empresa.tipo ||
+              empresa.area ||
+              "Construção civil",
+            location:
+              empresa.localizacao ||
+              [empresa.cidade, empresa.estado].filter(Boolean).join(" - ") ||
+              "Localização não informada",
+            cities: empresa.cidade ? [empresa.cidade] : [],
+            state: empresa.estado || estadoCliente,
+            badge: "✓ Empresa aprovada",
+            logo:
+              empresa.logo_url ||
+              empresa.logo ||
+              "/logos/deposito.png",
+            whatsapp: String(empresa.whatsapp || "").replace(/\D/g, ""),
+            origem: "supabase",
+          }));
+
+        const profissionaisMapeados: ProfissionalAprovado[] = (
+          profissionaisData || []
+        )
+          .filter((profissional: any) => {
+            const cidadeProfissional = String(
+              profissional.cidade || profissional.localizacao || ""
+            ).toLowerCase();
+            const estadoProfissional = String(
+              profissional.estado || ""
+            ).toUpperCase();
+
+            const mesmaCidade =
+              cidadeProfissional.includes(cidadeCliente) ||
+              cidadeCliente.includes(cidadeProfissional);
+            const mesmoEstado =
+              !estadoProfissional || estadoProfissional === estadoCliente;
+
+            return mesmaCidade && mesmoEstado;
+          })
+          .map((profissional: any) => {
+            const especialidade =
+              profissional.especialidade ||
+              profissional.funcao ||
+              profissional.area ||
+              "Profissional da construção";
+
+            const nome =
+              profissional.apelido ||
+              profissional.nome ||
+              "Profissional cadastrado";
+
+            return {
+              id: profissional.id,
+              nomeReal: nome,
+              title: nome,
+              subtitle:
+                profissional.localizacao ||
+                [profissional.cidade, profissional.estado]
+                  .filter(Boolean)
+                  .join(" - ") ||
+                "Atende sua região",
+              tag: especialidade,
+              cities: profissional.cidade ? [profissional.cidade] : [],
+              state: profissional.estado || estadoCliente,
+              whatsapp: String(profissional.whatsapp || "").replace(/\D/g, ""),
+              origem: "supabase",
+            };
+          });
+
+        setEmpresasAprovadas(empresasMapeadas);
+        setProfissionaisAprovados(profissionaisMapeados);
+      } catch (error) {
+        console.error("Erro ao carregar cadastros aprovados:", error);
+
+        if (ativo) {
+          setEmpresasAprovadas([]);
+          setProfissionaisAprovados([]);
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoAprovados(false);
+        }
+      }
+    }
+
+    carregarCadastrosAprovados();
+
+    return () => {
+      ativo = false;
+    };
+  }, [cliente?.cidade, cliente?.estado]);
+
   async function handleLogout() {
   await supabase.auth.signOut();
 
@@ -139,12 +320,31 @@ export default function PainelClientePage() {
       : "Localização não informada";
 
   const empresasDaRegiao = useMemo(() => {
+    if (empresasAprovadas.length > 0) {
+      return empresasAprovadas;
+    }
+
     return getFeaturedCompaniesByLocation(cliente?.cidade, cliente?.estado);
-  }, [cliente?.cidade, cliente?.estado]);
+  }, [
+    cliente?.cidade,
+    cliente?.estado,
+    empresasAprovadas,
+  ]);
 
   const profissionaisDaRegiao = useMemo(() => {
-    return getFeaturedProfessionalsByLocation(cliente?.cidade, cliente?.estado);
-  }, [cliente?.cidade, cliente?.estado]);
+    if (profissionaisAprovados.length > 0) {
+      return profissionaisAprovados;
+    }
+
+    return getFeaturedProfessionalsByLocation(
+      cliente?.cidade,
+      cliente?.estado
+    );
+  }, [
+    cliente?.cidade,
+    cliente?.estado,
+    profissionaisAprovados,
+  ]);
 
   const budgetMessage = useMemo(
     () => encodeURIComponent("Olá vim através do Construthéo"),
@@ -153,6 +353,15 @@ export default function PainelClientePage() {
 
   const profissionalMessage = useMemo(() => {
     const titulo = profissionalSelecionado?.title || "um profissional";
+    const profissionalReal = profissionalSelecionado as
+      | ProfissionalAprovado
+      | null;
+
+    if (profissionalReal?.origem === "supabase") {
+      return encodeURIComponent(
+        `Olá, vim através do ConstruThéo e gostaria de solicitar um orçamento com ${titulo}.`
+      );
+    }
 
     return encodeURIComponent(
       `Olá, vim através do ConstruThéo e quero indicar ${titulo
@@ -551,7 +760,14 @@ export default function PainelClientePage() {
             </div>
 
             <div style={carouselStyle}>
-              {empresasDaRegiao.map((empresa) => (
+              {carregandoAprovados && (
+                <div style={loadingCardStyle}>
+                  Buscando empresas aprovadas da sua região...
+                </div>
+              )}
+
+              {!carregandoAprovados &&
+                empresasDaRegiao.map((empresa) => (
                 <button
                   key={empresa.name}
                   type="button"
@@ -598,7 +814,14 @@ export default function PainelClientePage() {
             </div>
 
             <div style={carouselStyle}>
-              {profissionaisDaRegiao.map((item) => (
+              {carregandoAprovados && (
+                <div style={loadingCardStyle}>
+                  Buscando profissionais aprovados da sua região...
+                </div>
+              )}
+
+              {!carregandoAprovados &&
+                profissionaisDaRegiao.map((item) => (
                 <button
                   key={item.title}
                   type="button"
@@ -758,24 +981,41 @@ export default function PainelClientePage() {
               Ajude o ConstruThéo a encontrar bons profissionais da sua região.
             </p>
 
-            <a
-              href={`https://wa.me/5511988214713?text=${profissionalMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={primaryModalButtonStyle}
-            >
-              Indicar pelo WhatsApp
-            </a>
+            {(
+              profissionalSelecionado as ProfissionalAprovado
+            )?.origem === "supabase" ? (
+              <a
+                href={`https://wa.me/${
+                  (profissionalSelecionado as ProfissionalAprovado).whatsapp
+                }?text=${profissionalMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={primaryModalButtonStyle}
+              >
+                Solicitar orçamento
+              </a>
+            ) : (
+              <>
+                <a
+                  href={`https://wa.me/5511988214713?text=${profissionalMessage}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={primaryModalButtonStyle}
+                >
+                  Indicar pelo WhatsApp
+                </a>
 
-            <Link
-              href="/indicar"
-              style={{
-                ...secondaryModalButtonStyle,
-                marginTop: 10,
-              }}
-            >
-              Abrir formulário de indicação
-            </Link>
+                <Link
+                  href="/indicar"
+                  style={{
+                    ...secondaryModalButtonStyle,
+                    marginTop: 10,
+                  }}
+                >
+                  Abrir formulário de indicação
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -923,6 +1163,17 @@ const blueTagStyle: CSSProperties = {
   color: "#1D4ED8",
   fontSize: "0.65rem",
   fontWeight: 800,
+};
+
+const loadingCardStyle: CSSProperties = {
+  minWidth: 210,
+  padding: "14px",
+  borderRadius: 18,
+  background: "#FFFFFF",
+  border: "1px dashed #CBD5E1",
+  color: "#64748B",
+  fontSize: "0.76rem",
+  lineHeight: 1.4,
 };
 
 const modalOverlayStyle: CSSProperties = {
