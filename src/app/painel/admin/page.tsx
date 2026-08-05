@@ -29,7 +29,7 @@ type UsuarioAdmin = {
 };
 
 type Pendencia = UsuarioAdmin & {
-  tipo: "profissional" | "empresa";
+  tipo: TipoUsuario;
 };
 
 type Metricas = {
@@ -307,14 +307,13 @@ export default function PainelAdminPage() {
   }, [verificandoAdmin, carregarDados]);
 
   const pendencias = useMemo<Pendencia[]>(() => {
-    return [...profissionais, ...empresas]
+    return [...clientes, ...profissionais, ...empresas]
       .filter(
         (usuario) =>
-          usuario.tipo !== "cliente" &&
           normalizarStatus(usuario.status, "pendente") === "pendente"
       )
       .map((usuario) => usuario as Pendencia);
-  }, [profissionais, empresas]);
+  }, [clientes, profissionais, empresas]);
 
   const profissionaisDoCarrossel = useMemo(
     () =>
@@ -334,9 +333,18 @@ export default function PainelAdminPage() {
     [empresas]
   );
 
+  const clientesDoCarrossel = useMemo(
+    () =>
+      clientes.filter(
+        (usuario) =>
+          normalizarStatus(usuario.status, "cadastrado") !== "recusado"
+      ),
+    [clientes]
+  );
+
   const cadastrosRecusados = useMemo(
     () =>
-      [...profissionais, ...empresas]
+      [...clientes, ...profissionais, ...empresas]
         .filter(
           (usuario) =>
             normalizarStatus(usuario.status, "pendente") === "recusado"
@@ -346,7 +354,7 @@ export default function PainelAdminPage() {
           const dataB = b.created_at ? new Date(b.created_at).getTime() : 0;
           return dataB - dataA;
         }),
-    [profissionais, empresas]
+    [clientes, profissionais, empresas]
   );
 
   const todosUsuarios = useMemo(
@@ -395,7 +403,11 @@ export default function PainelAdminPage() {
     setSucesso(null);
 
     const tabela =
-      pendencia.tipo === "profissional" ? "profissionais" : "empresas";
+      pendencia.tipo === "cliente"
+        ? "clientes"
+        : pendencia.tipo === "profissional"
+        ? "profissionais"
+        : "empresas";
 
     try {
       const { data, error } = await supabase
@@ -417,7 +429,15 @@ export default function PainelAdminPage() {
         );
       }
 
-      if (pendencia.tipo === "profissional") {
+      if (pendencia.tipo === "cliente") {
+        setClientes((atuais) =>
+          atuais.map((usuario) =>
+            usuario.id === pendencia.id
+              ? { ...usuario, status: normalizarStatus(novoStatus, novoStatus) }
+              : usuario
+          )
+        );
+      } else if (pendencia.tipo === "profissional") {
         setProfissionais((atuais) =>
           atuais.map((usuario) =>
             usuario.id === pendencia.id
@@ -571,7 +591,7 @@ export default function PainelAdminPage() {
             <div>
               <h2 style={sectionTitleStyle}>Cadastros aguardando análise</h2>
               <p style={sectionSubtitleStyle}>
-                Lista vertical otimizada para aprovar pelo celular.
+                Clientes, profissionais e empresas aguardando sua decisão.
               </p>
             </div>
             <span style={countTagStyle}>{pendencias.length}</span>
@@ -595,7 +615,9 @@ export default function PainelAdminPage() {
                 return (
                   <article key={`${pendencia.tipo}-${pendencia.id}`} style={pendingCardStyle}>
                     <span style={pendingTypeStyle}>
-                      {pendencia.tipo === "profissional"
+                      {pendencia.tipo === "cliente"
+                        ? "Cliente"
+                        : pendencia.tipo === "profissional"
                         ? "Profissional"
                         : "Empresa"}
                     </span>
@@ -685,7 +707,7 @@ export default function PainelAdminPage() {
         <UsersCarousel
           titulo="Todos os clientes"
           subtitulo="Cadastros reais da tabela clientes"
-          usuarios={clientes}
+          usuarios={clientesDoCarrossel}
           carouselRef={clientesRef}
           onLeft={() => scrollCarrossel(clientesRef, "left")}
           onRight={() => scrollCarrossel(clientesRef, "right")}
