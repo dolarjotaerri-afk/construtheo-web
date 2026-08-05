@@ -218,7 +218,7 @@ export default function PainelClientePage() {
         const empresasMapeadas: EmpresaAprovada[] = (empresasData || [])
           .filter(
             (empresa: any) =>
-              normalizarStatus(empresa.status).includes("aprov") &&
+              normalizarStatus(empresa.status) === "aprovado" &&
               pertenceARegiao(
                 empresa.cidade,
                 empresa.estado,
@@ -254,7 +254,7 @@ export default function PainelClientePage() {
         )
           .filter(
             (profissional: any) =>
-              normalizarStatus(profissional.status).includes("aprov") &&
+              normalizarStatus(profissional.status) === "aprovado" &&
               pertenceARegiao(
                 profissional.cidade,
                 profissional.estado,
