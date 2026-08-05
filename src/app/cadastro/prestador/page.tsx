@@ -274,6 +274,7 @@ export default function CadastroPrestadorPage() {
             id: userId,
             nome,
             area: especialidade,
+            funcao: especialidade,
             especialidade,
             whatsapp,
             email,
@@ -288,7 +289,7 @@ export default function CadastroPrestadorPage() {
           }
         )
         .select(
-          "id, nome, especialidade, whatsapp, email, cep, cidade, estado, bairro, localizacao"
+          "id, nome, area, funcao, especialidade, whatsapp, email, cep, cidade, estado, bairro, localizacao"
         )
         .single();
 
