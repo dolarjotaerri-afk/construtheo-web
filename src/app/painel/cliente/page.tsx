@@ -364,7 +364,12 @@ export default function PainelClientePage() {
       cliente?.estado
     );
 
-    const todasEmpresas = [...empresasFixas, ...empresasAprovadas];
+    const todasEmpresas = [...empresasFixas, ...empresasAprovadas].map(
+      (empresa) => ({
+        ...empresa,
+        badge: "✓ Empresa aprovada",
+      })
+    );
 
     return todasEmpresas.filter((empresa, indice, lista) => {
       const chaveAtual = `${empresa.name}-${empresa.whatsapp}`.toLowerCase();
@@ -1208,7 +1213,9 @@ const companyNameStyle: CSSProperties = {
   color: "#111827",
   lineHeight: 1.25,
   marginBottom: 5,
-  minHeight: 30,
+  minHeight: 38,
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const companyLocationStyle: CSSProperties = {
@@ -1216,12 +1223,15 @@ const companyLocationStyle: CSSProperties = {
   color: "#6B7280",
   marginBottom: 9,
   lineHeight: 1.25,
-  minHeight: 30,
+  minHeight: 36,
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const professionalCardStyle: CSSProperties = {
-  minWidth: 150,
-  maxWidth: 150,
+  minWidth: 170,
+  maxWidth: 170,
+  minHeight: 190,
   flexShrink: 0,
   border: "1px solid #E5E7EB",
   borderRadius: 18,
@@ -1230,6 +1240,10 @@ const professionalCardStyle: CSSProperties = {
   boxShadow: "0 8px 18px rgba(15, 23, 42, 0.05)",
   cursor: "pointer",
   textAlign: "left",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
+  overflow: "hidden",
 };
 
 const professionalTitleStyle: CSSProperties = {
@@ -1238,6 +1252,8 @@ const professionalTitleStyle: CSSProperties = {
   color: "#111827",
   lineHeight: 1.25,
   marginBottom: 6,
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const professionalTextStyle: CSSProperties = {
@@ -1246,19 +1262,27 @@ const professionalTextStyle: CSSProperties = {
   marginBottom: 10,
   lineHeight: 1.3,
   minHeight: 46,
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const premiumTagStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  alignSelf: "flex-start",
+  maxWidth: "100%",
   padding: "4px 8px",
   borderRadius: "999px",
   background: "#FFFCF5",
   color: "#B7791F",
   fontSize: "0.62rem",
   fontWeight: 800,
-  whiteSpace: "nowrap",
+  lineHeight: 1.2,
+  whiteSpace: "normal",
+  textAlign: "left",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
   border: "1px solid #F1E4C3",
 };
 
@@ -1266,12 +1290,19 @@ const blueTagStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  alignSelf: "flex-start",
+  maxWidth: "100%",
   padding: "4px 8px",
   borderRadius: "999px",
   background: "#EEF2FF",
   color: "#1D4ED8",
   fontSize: "0.65rem",
   fontWeight: 800,
+  lineHeight: 1.2,
+  whiteSpace: "normal",
+  textAlign: "left",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
 };
 
 const loadingCardStyle: CSSProperties = {
