@@ -50,6 +50,26 @@ function texto(valor: unknown): string | null {
   return limpo || null;
 }
 
+
+function normalizarStatus(valor: unknown, fallback: string) {
+  if (valor == null) return fallback;
+
+  const limpo = String(valor)
+    .trim()
+    .replace(/::[a-zA-Z_][a-zA-Z0-9_]*/g, "")
+    .replace(/^['"]+|['"]+$/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (limpo.includes("aprov")) return "aprovado";
+  if (limpo.includes("recus")) return "recusado";
+  if (limpo.includes("bloque")) return "bloqueado";
+  if (limpo.includes("pendent")) return "pendente";
+  if (limpo.includes("cadastr")) return "cadastrado";
+
+  return limpo || fallback;
+}
+
 function formatarData(data?: string | null) {
   if (!data) return "Data não informada";
 
@@ -188,7 +208,7 @@ export default function PainelAdminPage() {
           estado: texto(cliente.estado),
           bairro: texto(cliente.bairro),
           detalhe: null,
-          status: texto(cliente.status) || "cadastrado",
+          status: normalizarStatus(cliente.status, "cadastrado"),
           created_at: texto(cliente.created_at),
         })
       );
@@ -212,7 +232,7 @@ export default function PainelAdminPage() {
           texto(profissional.funcao) ||
           texto(profissional.area) ||
           "Profissão não informada",
-        status: texto(profissional.status) || "pendente",
+        status: normalizarStatus(profissional.status, "pendente"),
         created_at: texto(profissional.created_at),
       }));
 
@@ -235,7 +255,7 @@ export default function PainelAdminPage() {
             texto(empresa.tipo) ||
             texto(empresa.area) ||
             "Categoria não informada",
-          status: texto(empresa.status) || "pendente",
+          status: normalizarStatus(empresa.status, "pendente"),
           created_at: texto(empresa.created_at),
         })
       );
@@ -290,7 +310,8 @@ export default function PainelAdminPage() {
     return [...profissionais, ...empresas]
       .filter(
         (usuario) =>
-          usuario.tipo !== "cliente" && usuario.status === "pendente"
+          usuario.tipo !== "cliente" &&
+          normalizarStatus(usuario.status, "pendente") === "pendente"
       )
       .map((usuario) => usuario as Pendencia);
   }, [profissionais, empresas]);
@@ -367,7 +388,7 @@ export default function PainelAdminPage() {
         setProfissionais((atuais) =>
           atuais.map((usuario) =>
             usuario.id === pendencia.id
-              ? { ...usuario, status: novoStatus }
+              ? { ...usuario, status: normalizarStatus(novoStatus, novoStatus) }
               : usuario
           )
         );
@@ -375,7 +396,7 @@ export default function PainelAdminPage() {
         setEmpresas((atuais) =>
           atuais.map((usuario) =>
             usuario.id === pendencia.id
-              ? { ...usuario, status: novoStatus }
+              ? { ...usuario, status: normalizarStatus(novoStatus, novoStatus) }
               : usuario
           )
         );
@@ -1126,7 +1147,7 @@ function typeTag(tipo: TipoUsuario): CSSProperties {
 }
 
 function statusTag(status?: string | null): CSSProperties {
-  const normalizado = (status || "cadastrado").toLowerCase();
+  const normalizado = normalizarStatus(status, "cadastrado");
 
   const config =
     normalizado === "aprovado"
