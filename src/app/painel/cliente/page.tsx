@@ -798,7 +798,7 @@ export default function PainelClientePage() {
               </p>
             </div>
 
-            <div style={carouselStyle}>
+            <div className="carrossel-cliente" style={carouselStyle}>
               {carregandoAprovados && (
                 <div style={loadingCardStyle}>
                   Buscando empresas aprovadas da sua região...
@@ -858,7 +858,7 @@ export default function PainelClientePage() {
               </p>
             </div>
 
-            <div style={carouselStyle}>
+            <div className="carrossel-cliente" style={carouselStyle}>
               {carregandoAprovados && (
                 <div style={loadingCardStyle}>
                   Buscando profissionais aprovados da sua região...
@@ -1011,6 +1011,28 @@ export default function PainelClientePage() {
         </div>
       )}
 
+      <style>
+        {`
+          .carrossel-cliente::-webkit-scrollbar {
+            height: 8px;
+          }
+
+          .carrossel-cliente::-webkit-scrollbar-track {
+            background: #E2E8F0;
+            border-radius: 999px;
+          }
+
+          .carrossel-cliente::-webkit-scrollbar-thumb {
+            background: #94A3B8;
+            border-radius: 999px;
+          }
+
+          .carrossel-cliente::-webkit-scrollbar-thumb:hover {
+            background: #64748B;
+          }
+        `}
+      </style>
+
       {profissionalSelecionado && (
         <div
           onClick={() => setProfissionalSelecionado(null)}
@@ -1115,11 +1137,12 @@ const carouselStyle: CSSProperties = {
   display: "flex",
   gap: 12,
   overflowX: "auto",
-  paddingBottom: 4,
+  paddingBottom: 10,
   paddingLeft: 2,
   paddingRight: 2,
-  scrollbarWidth: "none",
-  msOverflowStyle: "none",
+  scrollbarWidth: "thin",
+  scrollbarColor: "#94A3B8 #E2E8F0",
+  WebkitOverflowScrolling: "touch",
 };
 
 const companyCardStyle: CSSProperties = {
