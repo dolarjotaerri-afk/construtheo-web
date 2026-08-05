@@ -32,6 +32,10 @@ export default function PainelClientePage() {
   const router = useRouter();
   const [cliente, setCliente] = useState<ClienteResumo | null>(null);
   const [carregandoCliente, setCarregandoCliente] = useState(true);
+  const [possuiPerfilProfissional, setPossuiPerfilProfissional] =
+    useState(false);
+  const [carregandoPerfilProfissional, setCarregandoPerfilProfissional] =
+    useState(true);
 
   const [empresaSelecionada, setEmpresaSelecionada] =
     useState<FeaturedCompany | null>(null);
@@ -67,6 +71,24 @@ export default function PainelClientePage() {
         const parsed: ClienteResumo = JSON.parse(salvo);
         setCliente(parsed);
       }
+
+      const { data: perfilProfissional, error: perfilProfissionalError } =
+        await supabase
+          .from("profissionais")
+          .select("id")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+      if (perfilProfissionalError) {
+        console.error(
+          "Erro ao verificar perfil profissional:",
+          perfilProfissionalError
+        );
+      }
+
+      if (ativo) {
+        setPossuiPerfilProfissional(Boolean(perfilProfissional));
+      }
     } catch (err) {
       console.error("Erro ao carregar painel do cliente:", err);
 
@@ -76,6 +98,7 @@ export default function PainelClientePage() {
     } finally {
       if (ativo) {
         setCarregandoCliente(false);
+        setCarregandoPerfilProfissional(false);
       }
     }
   }
@@ -91,6 +114,7 @@ export default function PainelClientePage() {
 
   localStorage.removeItem("construtheo_cliente_atual");
   localStorage.removeItem("construtheo_demo_cliente");
+  localStorage.removeItem("construtheo_profissional_atual");
 
   router.replace("/login");
 }
@@ -127,34 +151,7 @@ export default function PainelClientePage() {
     []
   );
 
-  const profissionalMessage = useMemo(() => {if (carregandoCliente) {
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #cfe8ff, #3b82b8)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-      }}
-    >
-      <div
-        style={{
-          background: "#FFFFFF",
-          borderRadius: 20,
-          padding: "22px 26px",
-          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)",
-          color: "#374151",
-          fontSize: "0.9rem",
-          fontWeight: 700,
-        }}
-      >
-        Verificando seu acesso...
-      </div>
-    </main>
-  );
-}
+  const profissionalMessage = useMemo(() => {
     const titulo = profissionalSelecionado?.title || "um profissional";
 
     return encodeURIComponent(
@@ -163,6 +160,35 @@ export default function PainelClientePage() {
         .toLowerCase()}.`
     );
   }, [profissionalSelecionado]);
+
+  if (carregandoCliente) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          background: "linear-gradient(180deg, #cfe8ff, #3b82b8)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 20,
+        }}
+      >
+        <div
+          style={{
+            background: "#FFFFFF",
+            borderRadius: 20,
+            padding: "22px 26px",
+            boxShadow: "0 18px 40px rgba(15, 23, 42, 0.18)",
+            color: "#374151",
+            fontSize: "0.9rem",
+            fontWeight: 700,
+          }}
+        >
+          Verificando seu acesso...
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
@@ -343,6 +369,127 @@ export default function PainelClientePage() {
                   </div>
                 )}
               </div>
+            )}
+          </section>
+
+          {/* ACESSO / CADASTRO COMO PROFISSIONAL */}
+          <section
+            style={{
+              background: possuiPerfilProfissional ? "#EFF6FF" : "#F0FDF4",
+              border: possuiPerfilProfissional
+                ? "1px solid #BFDBFE"
+                : "1px solid #BBF7D0",
+              borderRadius: 24,
+              padding: 18,
+              boxShadow: "0 8px 24px rgba(15,23,42,0.08)",
+              marginBottom: 20,
+              maxWidth: "100%",
+              boxSizing: "border-box",
+            }}
+          >
+            {carregandoPerfilProfissional ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.85rem",
+                  color: "#6B7280",
+                }}
+              >
+                Verificando seu perfil profissional...
+              </p>
+            ) : possuiPerfilProfissional ? (
+              <>
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontSize: "1rem",
+                    fontWeight: 800,
+                    color: "#1E3A8A",
+                  }}
+                >
+                  Você também possui um perfil profissional
+                </h2>
+
+                <p
+                  style={{
+                    margin: "0 0 14px",
+                    fontSize: "0.82rem",
+                    color: "#4B5563",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Acesse seu painel profissional para completar seu perfil,
+                  adicionar fotos dos seus trabalhos e divulgar seus serviços.
+                </p>
+
+                <Link
+                  href="/painel/profissional"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    padding: "11px 14px",
+                    borderRadius: 999,
+                    background: "#2563EB",
+                    color: "#FFFFFF",
+                    fontSize: "0.84rem",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxSizing: "border-box",
+                    boxShadow: "0 8px 16px rgba(37, 99, 235, 0.2)",
+                  }}
+                >
+                  Acessar como profissional
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2
+                  style={{
+                    margin: "0 0 6px",
+                    fontSize: "1rem",
+                    fontWeight: 800,
+                    color: "#166534",
+                  }}
+                >
+                  Também trabalha com construção civil?
+                </h2>
+
+                <p
+                  style={{
+                    margin: "0 0 14px",
+                    fontSize: "0.82rem",
+                    color: "#4B5563",
+                    lineHeight: 1.45,
+                  }}
+                >
+                  Continue usando sua conta como cliente e crie também seu
+                  perfil profissional para ser encontrado por novos clientes da
+                  sua região.
+                </p>
+
+                <Link
+                  href="/cadastro/prestador"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    padding: "11px 14px",
+                    borderRadius: 999,
+                    background: "#16A34A",
+                    color: "#FFFFFF",
+                    fontSize: "0.84rem",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxSizing: "border-box",
+                    boxShadow: "0 8px 16px rgba(22, 163, 74, 0.2)",
+                  }}
+                >
+                  Quero oferecer meus serviços
+                </Link>
+              </>
             )}
           </section>
 
