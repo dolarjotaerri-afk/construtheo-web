@@ -316,6 +316,39 @@ export default function PainelAdminPage() {
       .map((usuario) => usuario as Pendencia);
   }, [profissionais, empresas]);
 
+  const profissionaisDoCarrossel = useMemo(
+    () =>
+      profissionais.filter(
+        (usuario) =>
+          normalizarStatus(usuario.status, "pendente") !== "recusado"
+      ),
+    [profissionais]
+  );
+
+  const empresasDoCarrossel = useMemo(
+    () =>
+      empresas.filter(
+        (usuario) =>
+          normalizarStatus(usuario.status, "pendente") !== "recusado"
+      ),
+    [empresas]
+  );
+
+  const cadastrosRecusados = useMemo(
+    () =>
+      [...profissionais, ...empresas]
+        .filter(
+          (usuario) =>
+            normalizarStatus(usuario.status, "pendente") === "recusado"
+        )
+        .sort((a, b) => {
+          const dataA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dataB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dataB - dataA;
+        }),
+    [profissionais, empresas]
+  );
+
   const todosUsuarios = useMemo(
     () =>
       [...clientes, ...profissionais, ...empresas].sort((a, b) => {
@@ -634,7 +667,7 @@ export default function PainelAdminPage() {
         <UsersCarousel
           titulo="Todos os profissionais"
           subtitulo="Cadastros reais da tabela profissionais"
-          usuarios={profissionais}
+          usuarios={profissionaisDoCarrossel}
           carouselRef={profissionaisRef}
           onLeft={() => scrollCarrossel(profissionaisRef, "left")}
           onRight={() => scrollCarrossel(profissionaisRef, "right")}
@@ -643,7 +676,7 @@ export default function PainelAdminPage() {
         <UsersCarousel
           titulo="Todas as empresas"
           subtitulo="Cadastros reais da tabela empresas"
-          usuarios={empresas}
+          usuarios={empresasDoCarrossel}
           carouselRef={empresasRef}
           onLeft={() => scrollCarrossel(empresasRef, "left")}
           onRight={() => scrollCarrossel(empresasRef, "right")}
@@ -657,6 +690,121 @@ export default function PainelAdminPage() {
           onLeft={() => scrollCarrossel(clientesRef, "left")}
           onRight={() => scrollCarrossel(clientesRef, "right")}
         />
+
+        <section
+          style={{
+            ...sectionStyle,
+            background: "#FFF7F7",
+            border: "1px solid #FECACA",
+          }}
+        >
+          <div style={sectionHeaderStyle}>
+            <div>
+              <h2
+                style={{
+                  ...sectionTitleStyle,
+                  color: "#991B1B",
+                }}
+              >
+                Cadastros recusados
+              </h2>
+              <p style={sectionSubtitleStyle}>
+                Histórico separado dos carrosséis públicos e de divulgação.
+              </p>
+            </div>
+            <span
+              style={{
+                ...countTagStyle,
+                background: "#FEE2E2",
+                color: "#B91C1C",
+              }}
+            >
+              {cadastrosRecusados.length}
+            </span>
+          </div>
+
+          {cadastrosRecusados.length === 0 ? (
+            <p style={emptyStyle}>Nenhum cadastro recusado.</p>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {cadastrosRecusados.map((usuario) => (
+                <article
+                  key={`recusado-${usuario.tipo}-${usuario.id}`}
+                  style={{
+                    padding: "10px 11px",
+                    borderRadius: 14,
+                    border: "1px solid #FECACA",
+                    background: "#FFFFFF",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          marginBottom: 5,
+                          padding: "3px 8px",
+                          borderRadius: 999,
+                          background: "#FEE2E2",
+                          color: "#B91C1C",
+                          fontSize: "0.66rem",
+                          fontWeight: 800,
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {usuario.tipo}
+                      </span>
+
+                      <h3
+                        style={{
+                          ...cardNameStyle,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {usuario.nome}
+                      </h3>
+
+                      {usuario.detalhe && (
+                        <p style={cardDetailStyle}>{usuario.detalhe}</p>
+                      )}
+
+                      <p style={cardMetaStyle}>
+                        {[usuario.cidade, usuario.estado]
+                          .filter(Boolean)
+                          .join(" - ") || "Localização não informada"}
+                      </p>
+
+                      {usuario.whatsapp && (
+                        <p style={cardMetaStyle}>
+                          WhatsApp: {usuario.whatsapp}
+                        </p>
+                      )}
+
+                      <p style={cardMetaStyle}>
+                        Cadastro: {formatarData(usuario.created_at)}
+                      </p>
+                    </div>
+
+                    <span style={statusTag("recusado")}>Recusado</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section style={sectionStyle}>
           <div style={sectionHeaderStyle}>
