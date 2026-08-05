@@ -10,6 +10,8 @@ const CONSTRUTHEO_WHATSAPP = "5511988214713";
 export default function CadastroClientePage() {
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [cadastroConcluido, setCadastroConcluido] = useState(false);
+  const [linkWhatsapp, setLinkWhatsapp] = useState<string | null>(null);
 
   // senha
   const [senha, setSenha] = useState("");
@@ -50,6 +52,16 @@ export default function CadastroClientePage() {
     } finally {
       setBuscandoCep(false);
     }
+  }
+
+  function finalizarCadastro() {
+    if (typeof window === "undefined") return;
+
+    if (linkWhatsapp) {
+      window.open(linkWhatsapp, "_blank", "noopener,noreferrer");
+    }
+
+    window.location.href = "/login";
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -224,7 +236,7 @@ export default function CadastroClientePage() {
         );
       }
 
-      // 5) Redireciona para o WhatsApp do ConstruThéo com os dados do cliente
+      // 5) Prepara a mensagem do WhatsApp e mostra a confirmação do cadastro
       if (typeof window !== "undefined" && resumoCliente) {
         const mensagemWhatsapp = [
           "Olá, sou novo cliente cadastrado no Construthéo.",
@@ -240,11 +252,13 @@ export default function CadastroClientePage() {
           `Aceita ofertas no WhatsApp: ${resumoCliente.aceita_ofertas_whatsapp ? "Sim" : "Não"}`,
         ].join("\n");
 
-        const linkWhatsapp = `https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${encodeURIComponent(
+        const whatsappUrl = `https://wa.me/${CONSTRUTHEO_WHATSAPP}?text=${encodeURIComponent(
           mensagemWhatsapp
         )}`;
 
-        window.location.href = linkWhatsapp;
+        setLinkWhatsapp(whatsappUrl);
+        setCadastroConcluido(true);
+        setLoading(false);
         return;
       }
     } catch (err: any) {
@@ -744,6 +758,98 @@ export default function CadastroClientePage() {
           </button>
         </form>
       </div>
+
+      {cadastroConcluido && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="titulo-cadastro-concluido"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            background: "rgba(15, 23, 42, 0.68)",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 390,
+              padding: "26px 22px",
+              borderRadius: 24,
+              background: "#FFFFFF",
+              boxShadow: "0 20px 50px rgba(15, 23, 42, 0.28)",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 58,
+                height: 58,
+                margin: "0 auto 14px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#DCFCE7",
+                fontSize: "1.8rem",
+                color: "#15803D",
+                fontWeight: 800,
+              }}
+            >
+              ✓
+            </div>
+
+            <h2
+              id="titulo-cadastro-concluido"
+              style={{
+                margin: "0 0 8px",
+                fontSize: "1.25rem",
+                fontWeight: 800,
+                color: "#111827",
+              }}
+            >
+              Cadastro realizado com sucesso!
+            </h2>
+
+            <p
+              style={{
+                margin: "0 0 18px",
+                fontSize: "0.9rem",
+                lineHeight: 1.5,
+                color: "#4B5563",
+              }}
+            >
+              Sua conta de cliente foi criada no Construthéo. Envie a mensagem
+              de confirmação pelo WhatsApp e depois realize seu primeiro login.
+            </p>
+
+            <button
+              type="button"
+              onClick={finalizarCadastro}
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: "none",
+                borderRadius: 999,
+                background: "linear-gradient(to right, #16A34A, #22C55E)",
+                color: "#FFFFFF",
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 3px 8px rgba(22, 163, 74, 0.24)",
+              }}
+            >
+              Enviar mensagem e ir para o login
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
