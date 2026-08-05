@@ -359,11 +359,23 @@ export default function PainelClientePage() {
       : "Localização não informada";
 
   const empresasDaRegiao = useMemo(() => {
-    if (empresasAprovadas.length > 0) {
-      return empresasAprovadas;
-    }
+    const empresasFixas = getFeaturedCompaniesByLocation(
+      cliente?.cidade,
+      cliente?.estado
+    );
 
-    return getFeaturedCompaniesByLocation(cliente?.cidade, cliente?.estado);
+    const todasEmpresas = [...empresasFixas, ...empresasAprovadas];
+
+    return todasEmpresas.filter((empresa, indice, lista) => {
+      const chaveAtual = `${empresa.name}-${empresa.whatsapp}`.toLowerCase();
+
+      return (
+        lista.findIndex((item) => {
+          const chaveItem = `${item.name}-${item.whatsapp}`.toLowerCase();
+          return chaveItem === chaveAtual;
+        }) === indice
+      );
+    });
   }, [
     cliente?.cidade,
     cliente?.estado,
