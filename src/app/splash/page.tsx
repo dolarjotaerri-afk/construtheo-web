@@ -1,124 +1,183 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
-const MASCOTS = [
-  "/mascote-pedreiro.png",
-  "/mascote-pedreiro1.png",
-  "/mascote-pintor.png",
-  "/mascote-eletricista-v2.png",
-  "/mascote-jardineiro-v2.png",
+type SplashScreenProps = {
+  onFinish: () => void;
+};
+
+const SPLASH_MESSAGES = [
+  "Encontre quem sua obra precisa.",
+  "Divulgue seus serviços.",
+  "Divulgue sua empresa.",
+  "Calcule o que sua obra precisa.",
 ];
 
-const SPLASH_DURATION = 1400;
-
-export default function SplashScreen() {
-  const router = useRouter();
-  const [mascotIndex, setMascotIndex] = useState(0);
+export default function SplashScreen({ onFinish }: SplashScreenProps) {
+  const [stage, setStage] = useState(-1);
 
   useEffect(() => {
-    
-    // Começa a preparar a próxima página enquanto a Splash aparece.
-    router.prefetch("/login");
+    const timers = [
+      window.setTimeout(() => setStage(0), 280),
+      window.setTimeout(() => setStage(1), 900),
+      window.setTimeout(() => setStage(2), 1520),
+      window.setTimeout(() => setStage(3), 2140),
+      window.setTimeout(() => setStage(4), 2760),
+      window.setTimeout(onFinish, 3660),
+    ];
 
-    // Faz somente uma troca de mascote durante a Splash.
-    const mascotTimer = window.setTimeout(() => {
-      setMascotIndex(1);
-    }, 650);
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [onFinish]);
 
-    // Abre a próxima página após 1,4 segundo.
-    const navigationTimer = window.setTimeout(() => {
-      router.replace("/login");
-    }, SPLASH_DURATION);
-
-    return () => {
-      window.clearTimeout(mascotTimer);
-      window.clearTimeout(navigationTimer);
-    };
-  }, [router]);
+  const isBrandStage = stage === 4;
+  const mascotSrc = stage % 2 === 0 ? "/mascote-pedreiro.png" : "/mascote-pedreiro1.png";
 
   return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        margin: 0,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "linear-gradient(180deg, #0f172a, #1e3a5f)",
-        padding: 16,
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          backgroundColor: "#ffffff",
-          borderRadius: 24,
-          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.35)",
-          padding: 24,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            width: 140,
-            height: 140,
-            position: "relative",
-            marginBottom: 12,
-            borderRadius: 999,
-            backgroundColor: "#ffffff",
-          }}
-        >
-          <Image
-            src={MASCOTS[mascotIndex]}
-            alt="Mascote ConstruThéo"
-            fill
-            sizes="140px"
-            style={{
-              objectFit: "contain",
-              filter: "drop-shadow(0 8px 16px rgba(15, 23, 42, 0.35))",
-            }}
-            priority
-          />
+    <div className="construtheo-splash" aria-label="Carregando Construthéo">
+      {stage >= 0 && !isBrandStage && (
+        <div className="splash-scene" key={`message-${stage}`}>
+          <div className="splash-mascot-wrap">
+            <Image
+              src={mascotSrc}
+              alt="Mascote Construthéo"
+              fill
+              priority
+              sizes="190px"
+              className="splash-mascot"
+            />
+          </div>
+
+          <p className="splash-message">{SPLASH_MESSAGES[stage]}</p>
         </div>
+      )}
 
-        <h1
-          style={{
-            fontSize: 24,
-            fontWeight: 600,
-            margin: "0 0 8px",
-            color: "#0f172a",
-          }}
-        >
-          Constru<span style={{ color: "#0284c7" }}>Théo</span>
-        </h1>
+      {isBrandStage && (
+        <div className="splash-brand-scene" key="brand">
+          <p className="splash-brand">
+            Constru<span>Théo</span>
+          </p>
+          <p className="splash-tagline">Sua obra conectada a quem faz acontecer.</p>
+        </div>
+      )}
 
-        <p
-          style={{
-            fontSize: 14,
-            color: "#64748b",
-            margin: "0 0 16px",
-          }}
-        >
-          Sua obra conectada a quem faz acontecer.
-        </p>
+      <style jsx>{`
+        .construtheo-splash {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          min-height: 100vh;
+          min-height: 100dvh;
+          width: 100%;
+          overflow: hidden;
+          background: #0284c7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          padding: max(22px, env(safe-area-inset-top)) 24px
+            max(22px, env(safe-area-inset-bottom));
+        }
 
-        <p
-          style={{
-            fontSize: 11,
-            color: "#94a3b8",
-            margin: 0,
-          }}
-        >
-          Carregando sua experiência na construção civil...
-        </p>
-      </div>
-    </main>
+        .splash-scene,
+        .splash-brand-scene {
+          width: min(100%, 390px);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          animation: splashEnter 0.28s ease-out both;
+        }
+
+        .splash-mascot-wrap {
+          position: relative;
+          width: 176px;
+          height: 176px;
+          margin-bottom: 22px;
+          animation: mascotFloat 1.45s ease-in-out infinite;
+        }
+
+        :global(.splash-mascot) {
+          object-fit: contain;
+          filter: drop-shadow(0 16px 22px rgba(0, 49, 87, 0.24));
+        }
+
+        .splash-message {
+          max-width: 340px;
+          margin: 0;
+          font-size: clamp(1.35rem, 5vw, 1.72rem);
+          line-height: 1.12;
+          font-weight: 850;
+          letter-spacing: -0.035em;
+          text-wrap: balance;
+        }
+
+        .splash-brand-scene {
+          animation: brandEnter 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        .splash-brand {
+          margin: 0;
+          font-size: clamp(2.55rem, 11vw, 4.25rem);
+          font-weight: 950;
+          line-height: 0.98;
+          letter-spacing: -0.065em;
+        }
+
+        .splash-brand span {
+          font-weight: 750;
+        }
+
+        .splash-tagline {
+          margin: 14px 0 0;
+          max-width: 310px;
+          font-size: 0.82rem;
+          line-height: 1.4;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.84);
+        }
+
+        @keyframes splashEnter {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.985);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes brandEnter {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes mascotFloat {
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .splash-scene,
+          .splash-brand-scene,
+          .splash-mascot-wrap {
+            animation: none;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
