@@ -446,10 +446,60 @@ export default function RootPage() {
         .indicate{display:flex;flex-direction:column;gap:14px;margin-top:18px;padding:19px;border:1px solid #dbeafe;border-radius:24px;background:radial-gradient(circle at right top,rgba(14,165,233,.11),transparent 34%),white}.indicate p{margin:6px 0 0;color:var(--muted);font-size:.64rem;line-height:1.45}.indicate>a{align-self:flex-start;min-height:39px;display:flex;align-items:center;padding:0 13px;border-radius:12px;background:var(--blue);color:white;font-size:.62rem;font-weight:900;text-decoration:none}.footer{padding:28px 0 4px;display:flex;flex-direction:column;align-items:center}.footer strong{font-size:.72rem}.footer span{margin-top:3px;color:#94a3b8;font-size:.53rem}
         .bottomNav{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));z-index:50;width:calc(100% - 20px);max-width:560px;min-height:68px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:7px 6px;border:1px solid rgba(226,232,240,.92);border-radius:22px;background:rgba(255,255,255,.95);box-shadow:0 16px 40px rgba(15,23,42,.16);backdrop-filter:blur(18px)}.bottomNav>a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:15px;color:#94a3b8;font-size:.47rem;font-weight:800;text-decoration:none}.bottomNav>a.active{background:#f0f9ff;color:var(--blue)}.bottomNav svg{width:20px;height:20px}
         .installCard{position:fixed;left:50%;bottom:90px;z-index:60;width:calc(100% - 24px);max-width:490px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid #dbeafe;border-radius:18px;background:rgba(255,255,255,.97);box-shadow:0 16px 36px rgba(15,23,42,.2)}.installCard>img{width:44px;height:44px;object-fit:contain;border-radius:13px;background:#f0f9ff}.installCard>div{min-width:0;flex:1;display:flex;flex-direction:column}.installCard strong{font-size:.8rem}.installCard span{color:#64748b;font-size:.67rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.installCard button{border:0;border-radius:12px;padding:10px 13px;background:#0ea5e9;color:white;font-size:.72rem;font-weight:800}.installCard button.close{width:32px;height:32px;padding:0;border-radius:50%;background:#f1f5f9;color:#64748b;font-size:1.05rem}
+
+        @media(max-width:520px){
+          .hero{
+            min-height:305px;
+            padding:19px 18px 0;
+            border-radius:24px
+          }
+          .kicker{
+            padding:6px 9px;
+            font-size:.5rem
+          }
+          .hero h1{
+            margin:10px 0 7px;
+            font-size:1.62rem;
+            line-height:1
+          }
+          .hero p{
+            max-width:95%;
+            font-size:.68rem;
+            line-height:1.42
+          }
+          .heroButtons{
+            margin-top:12px;
+            gap:7px
+          }
+          .primary,.secondary{
+            min-height:37px;
+            padding:0 12px;
+            border-radius:11px;
+            font-size:.6rem
+          }
+          .heroVisual{
+            min-height:82px
+          }
+          .mascotCircle{
+            width:138px;
+            height:138px;
+            right:-2px;
+            bottom:-10px
+          }
+          .mascotCircle img{
+            width:135px;
+            height:135px
+          }
+          .nearBadge{
+            bottom:13px;
+            padding:6px 9px;
+            font-size:.5rem
+          }
+        }
         @media(min-width:520px){.region{display:flex}.audiences{grid-template-columns:1fr 1fr}.calcBanner{grid-template-columns:auto 1fr auto;align-items:center}.calcBanner>a{grid-column:auto;padding:0 14px}.indicate{flex-direction:row;align-items:center;justify-content:space-between}.indicate>a{flex-shrink:0}}
         @media(min-width:768px){.shell{padding:26px 24px 48px}.hero{min-height:420px;flex-direction:row;align-items:center;padding:44px}.heroCopy{width:60%}.heroVisual{width:40%;min-height:300px}.mascotCircle{right:0;bottom:-40px;width:290px;height:290px}.mascotCircle img{width:280px;height:280px}.nearBadge{left:auto;right:195px;bottom:84px}.section{margin-top:34px}.quick i{width:60px;height:60px}.quick{font-size:.62rem}.sectionTitle h2,.heading h2,.calcBanner h2,.indicate h2{font-size:1.28rem}.proCard{width:180px}.companyCard{width:172px}.calcBanner,.indicate{padding:24px}}
         @media(min-width:1000px){.hero{min-height:455px}.hero h1{font-size:3.8rem}.hero p{font-size:.9rem}.quickGrid{max-width:720px}.audiences{gap:14px}.audienceCard{padding:19px}.audienceCard strong{font-size:.88rem}.proCard{width:195px}.companyCard{width:185px}}
-        @media(max-width:380px){.shell{padding-left:12px;padding-right:12px}.brand small{display:none}.hero{padding-left:18px;padding-right:18px}.hero h1{font-size:1.7rem}.quickGrid{gap:4px}.quick i{width:46px;height:46px}.quick{font-size:.48rem}.installCard span{display:none}}
+        @media(max-width:380px){.shell{padding-left:12px;padding-right:12px}.brand small{display:none}.hero{padding-left:18px;padding-right:18px}.hero h1{font-size:1.55rem}.quickGrid{gap:4px}.quick i{width:46px;height:46px}.quick{font-size:.48rem}.installCard span{display:none}}
       `}</style>
     </>
   );
