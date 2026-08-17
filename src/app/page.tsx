@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import SplashScreen from "./SplashScreen";
 import { supabase } from "../lib/supabaseClient";
+import {
+  getFeaturedCompaniesByLocation,
+  type FeaturedCompany,
+} from "../lib/featuredCompanies";
+import {
+  getFeaturedProfessionalsByLocation,
+  type FeaturedProfessional,
+} from "../lib/featuredProfessionals";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -14,27 +22,64 @@ type BeforeInstallPromptEvent = Event & {
   }>;
 };
 
-const companies = [
-  ["🏪", "Depósito de materiais"],
-  ["▦", "Vidraçaria"],
-  ["⚙", "Serralheria"],
-  ["◫", "Marmoraria"],
-  ["☀", "Energia solar"],
-  ["▰", "Caçamba de entulho"],
-  ["🏗", "Usina de concreto"],
-  ["🚜", "Máquinas e equipamentos"],
-];
+type LocalizacaoResumo = {
+  cidade?: string;
+  estado?: string;
+};
 
-const professionals = [
-  ["João", "Pedreiro"],
-  ["Carlos", "Pintor"],
-  ["Luiz", "Eletricista"],
-  ["Marcos", "Encanador"],
-  ["Rafael", "Gesseiro e drywall"],
-  ["André", "Azulejista"],
-  ["Paulo", "Serralheiro"],
-  ["Lucas", "Jardineiro"],
-];
+type EmpresaAprovada = FeaturedCompany & {
+  id: string;
+  origem: "supabase";
+};
+
+type ProfissionalAprovado = FeaturedProfessional & {
+  id: string;
+  nomeReal: string;
+  whatsapp?: string;
+  origem: "supabase";
+};
+
+function lerLocalizacaoSalva(): LocalizacaoResumo {
+  if (typeof window === "undefined") return {};
+
+  const chaves = [
+    "construtheo_cliente_atual",
+    "construtheo_profissional_atual",
+    "construtheo_empresa_atual",
+  ];
+
+  for (const chave of chaves) {
+    const salvo = localStorage.getItem(chave);
+    if (!salvo) continue;
+
+    try {
+      const parsed = JSON.parse(salvo) as {
+        cidade?: string;
+        estado?: string;
+      };
+
+      if (parsed?.cidade || parsed?.estado) {
+        return {
+          cidade: parsed.cidade,
+          estado: parsed.estado,
+        };
+      }
+    } catch {
+      // Ignora dados locais inválidos e tenta a próxima fonte.
+    }
+  }
+
+  return {};
+}
+
+function normalizarStatus(valor: unknown) {
+  return String(valor || "")
+    .trim()
+    .replace(/::[a-zA-Z_][a-zA-Z0-9_]*/g, "")
+    .replace(/^['"]+|['"]+$/g, "")
+    .trim()
+    .toLowerCase();
+}
 
 function Icon({
   name,
@@ -96,6 +141,13 @@ export default function RootPage() {
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallCard, setShowInstallCard] = useState(false);
+  const [localizacao, setLocalizacao] = useState<LocalizacaoResumo>({});
+  const [empresasAprovadas, setEmpresasAprovadas] = useState<
+    EmpresaAprovada[]
+  >([]);
+  const [profissionaisAprovados, setProfissionaisAprovados] = useState<
+    ProfissionalAprovado[]
+  >([]);
 
   useEffect(() => {
     let mounted = true;
@@ -116,8 +168,11 @@ export default function RootPage() {
 
       if (!session?.user) {
         setAccountAction({ label: "Entrar", href: "/login" });
+        setLocalizacao({});
         return;
       }
+
+      setLocalizacao(lerLocalizacaoSalva());
 
       let tipo =
         session.user.user_metadata?.tipo ||
@@ -151,6 +206,185 @@ export default function RootPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let ativo = true;
+
+    const cidadeCliente = localizacao.cidade?.trim().toLowerCase() || "";
+    const estadoCliente = localizacao.estado?.trim().toUpperCase() || "";
+    const possuiLocalizacao = Boolean(cidadeCliente && estadoCliente);
+
+    function pertenceARegiao(
+      cidadeRegistro: unknown,
+      estadoRegistro: unknown,
+      localizacaoRegistro: unknown
+    ) {
+      if (!possuiLocalizacao) return false;
+
+      const cidade = String(cidadeRegistro || "").trim().toLowerCase();
+      const estado = String(estadoRegistro || "").trim().toUpperCase();
+      const textoLocalizacao = String(localizacaoRegistro || "")
+        .trim()
+        .toLowerCase();
+
+      const cidadeEncontrada =
+        cidade === cidadeCliente ||
+        textoLocalizacao.includes(cidadeCliente);
+
+      const estadoEncontrado =
+        !estado ||
+        estado === estadoCliente ||
+        textoLocalizacao.includes(estadoCliente.toLowerCase());
+
+      return cidadeEncontrada && estadoEncontrado;
+    }
+
+    async function carregarAprovados() {
+      if (!possuiLocalizacao) {
+        if (ativo) {
+          setEmpresasAprovadas([]);
+          setProfissionaisAprovados([]);
+        }
+        return;
+      }
+
+      try {
+        const [
+          { data: empresasData, error: empresasError },
+          { data: profissionaisData, error: profissionaisError },
+        ] = await Promise.all([
+          supabase.from("empresas").select("*").limit(500),
+          supabase.from("profissionais").select("*").limit(500),
+        ]);
+
+        if (empresasError) {
+          console.error("Erro ao carregar empresas aprovadas:", empresasError);
+        }
+
+        if (profissionaisError) {
+          console.error(
+            "Erro ao carregar profissionais aprovados:",
+            profissionaisError
+          );
+        }
+
+        if (!ativo) return;
+
+        const empresasMapeadas: EmpresaAprovada[] = (empresasData || [])
+          .filter(
+            (empresa: any) =>
+              normalizarStatus(empresa.status) === "aprovado" &&
+              pertenceARegiao(
+                empresa.cidade,
+                empresa.estado,
+                empresa.localizacao
+              )
+          )
+          .map((empresa: any) => ({
+            id: empresa.id,
+            name:
+              empresa.nome_fantasia ||
+              empresa.nome ||
+              empresa.razao_social ||
+              "Empresa cadastrada",
+            category:
+              empresa.categoria ||
+              empresa.tipo ||
+              empresa.area ||
+              "Construção civil",
+            location:
+              empresa.localizacao ||
+              [empresa.cidade, empresa.estado].filter(Boolean).join(" - ") ||
+              "Localização não informada",
+            cities: empresa.cidade ? [empresa.cidade] : [],
+            state: empresa.estado || estadoCliente,
+            badge: "✓ Empresa aprovada",
+            logo: empresa.logo_url || empresa.logo || "",
+            whatsapp: String(empresa.whatsapp || "").replace(/\D/g, ""),
+            origem: "supabase",
+          }));
+
+        const profissionaisMapeados: ProfissionalAprovado[] = (
+          profissionaisData || []
+        )
+          .filter(
+            (profissional: any) =>
+              normalizarStatus(profissional.status) === "aprovado" &&
+              pertenceARegiao(
+                profissional.cidade,
+                profissional.estado,
+                profissional.localizacao
+              )
+          )
+          .map((profissional: any) => {
+            const especialidade =
+              profissional.especialidade ||
+              profissional.funcao ||
+              profissional.area ||
+              "Profissional da construção";
+
+            const nome =
+              profissional.apelido ||
+              profissional.nome ||
+              "Profissional cadastrado";
+
+            return {
+              id: profissional.id,
+              nomeReal: nome,
+              title: nome,
+              subtitle:
+                profissional.localizacao ||
+                [profissional.cidade, profissional.estado]
+                  .filter(Boolean)
+                  .join(" - ") ||
+                "Localização não informada",
+              tag: especialidade,
+              cities: profissional.cidade ? [profissional.cidade] : [],
+              state: profissional.estado || estadoCliente,
+              whatsapp: String(profissional.whatsapp || "").replace(/\D/g, ""),
+              origem: "supabase",
+            };
+          });
+
+        setEmpresasAprovadas(empresasMapeadas);
+        setProfissionaisAprovados(profissionaisMapeados);
+      } catch (error) {
+        console.error("Erro ao carregar destaques da Home:", error);
+
+        if (ativo) {
+          setEmpresasAprovadas([]);
+          setProfissionaisAprovados([]);
+        }
+      }
+    }
+
+    carregarAprovados();
+
+    if (!possuiLocalizacao) {
+      return () => {
+        ativo = false;
+      };
+    }
+
+    const channel = supabase
+      .channel("home-aprovados")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profissionais" },
+        carregarAprovados
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "empresas" },
+        carregarAprovados
+      )
+      .subscribe();
+
+    return () => {
+      ativo = false;
+      supabase.removeChannel(channel);
+    };
+  }, [localizacao.cidade, localizacao.estado]);
 
   useEffect(() => {
     const standalone =
@@ -196,6 +430,54 @@ export default function RootPage() {
     setShowInstallCard(false);
   };
 
+  const empresasDaRegiao = useMemo(() => {
+    const fixas = getFeaturedCompaniesByLocation(
+      localizacao.cidade,
+      localizacao.estado
+    );
+
+    const todas = [...fixas, ...empresasAprovadas];
+
+    return todas.filter((empresa, indice, lista) => {
+      const chaveAtual = `${empresa.name}-${empresa.whatsapp}`.toLowerCase();
+
+      return (
+        lista.findIndex((item) => {
+          const chaveItem = `${item.name}-${item.whatsapp}`.toLowerCase();
+          return chaveItem === chaveAtual;
+        }) === indice
+      );
+    });
+  }, [localizacao.cidade, localizacao.estado, empresasAprovadas]);
+
+  const profissionaisDaRegiao = useMemo(() => {
+    if (profissionaisAprovados.length > 0) {
+      return profissionaisAprovados;
+    }
+
+    return getFeaturedProfessionalsByLocation(
+      localizacao.cidade,
+      localizacao.estado
+    );
+  }, [
+    localizacao.cidade,
+    localizacao.estado,
+    profissionaisAprovados,
+  ]);
+
+  const localLabel =
+    localizacao.cidade && localizacao.estado
+      ? `${localizacao.cidade} - ${localizacao.estado}`
+      : "Sua região";
+
+  const budgetMessage = useMemo(
+    () =>
+      encodeURIComponent(
+        "Olá, vim através do Construthéo e gostaria de solicitar um orçamento."
+      ),
+    []
+  );
+
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
@@ -218,7 +500,7 @@ export default function RootPage() {
                 <span className="regionDot" />
                 <div>
                   <small>Explorar</small>
-                  <strong>Sua região</strong>
+                  <strong>{localLabel}</strong>
                 </div>
               </div>
 
@@ -248,7 +530,11 @@ export default function RootPage() {
             </div>
 
             <div className="heroVisual" aria-hidden="true">
-              <span className="nearBadge">Perto de você</span>
+              <span className="nearBadge">
+                {localizacao.cidade
+                  ? `Em ${localizacao.cidade}`
+                  : "Perto de você"}
+              </span>
               <div className="mascotCircle">
                 <Image
                   src="/mascote-pedreiro.png"
@@ -288,9 +574,20 @@ export default function RootPage() {
                 <span>Indicar</span>
               </Link>
 
-              <Link href="/cadastro/cliente" className="quick">
+              <Link
+                href={
+                  accountAction.label === "Entrar"
+                    ? "/cadastro/cliente"
+                    : accountAction.href
+                }
+                className="quick"
+              >
                 <i><Icon name="user" /></i>
-                <span>Cadastre-se</span>
+                <span>
+                  {accountAction.label === "Entrar"
+                    ? "Cadastre-se"
+                    : "Meu painel"}
+                </span>
               </Link>
             </div>
           </section>
@@ -323,30 +620,65 @@ export default function RootPage() {
                 <span>Profissionais</span>
                 <h2>Encontre profissionais na sua região</h2>
                 <p>
-                  Perfis demonstrativos para mostrar como a busca funciona.
+                  {localizacao.cidade && localizacao.estado
+                    ? `Profissionais aprovados para ${localizacao.cidade} - ${localizacao.estado}.`
+                    : "Cadastre-se para ver profissionais aprovados perto de você."}
                 </p>
               </div>
               <Link href="/cadastro/prestador">Cadastrar perfil</Link>
             </div>
 
             <div className="horizontal">
-              {professionals.map(([name, profession]) => (
-                <Link
-                  href="/cadastro/prestador"
-                  className="proCard"
-                  key={`${name}-${profession}`}
-                >
-                  <div className="proCover">
-                    <em>Perfil demonstrativo</em>
-                  </div>
-                  <div className="avatar">👷</div>
-                  <div className="proContent">
-                    <strong>{name}</strong>
-                    <span>{profession}</span>
-                    <small>Seu perfil pode aparecer aqui</small>
-                  </div>
-                </Link>
-              ))}
+              {profissionaisDaRegiao.map((item) => {
+                const profissionalReal =
+                  "origem" in item &&
+                  (item as ProfissionalAprovado).origem === "supabase";
+
+                const whatsapp = profissionalReal
+                  ? (item as ProfissionalAprovado).whatsapp || ""
+                  : "";
+
+                const href = whatsapp
+                  ? `https://wa.me/${whatsapp}?text=${encodeURIComponent(
+                      `Olá, vim através do Construthéo e gostaria de solicitar um orçamento com ${item.title}.`
+                    )}`
+                  : "/indicar";
+
+                return (
+                  <a
+                    href={href}
+                    target={whatsapp ? "_blank" : undefined}
+                    rel={whatsapp ? "noopener noreferrer" : undefined}
+                    className="proCard"
+                    key={
+                      profissionalReal
+                        ? (item as ProfissionalAprovado).id
+                        : `${item.title}-${item.tag}`
+                    }
+                  >
+                    <div className="proCover">
+                      <em>
+                        {profissionalReal
+                          ? "✓ Profissional aprovado"
+                          : "Ajude a fortalecer a rede"}
+                      </em>
+                    </div>
+
+                    <div className="avatar">👷</div>
+
+                    <div className="proContent">
+                      <strong>{item.title}</strong>
+                      <span>{item.tag}</span>
+                      <p>{item.subtitle}</p>
+                      <small>
+                        {profissionalReal
+                          ? "Solicitar orçamento"
+                          : "Indicar profissional"}
+                      </small>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </section>
 
@@ -356,21 +688,50 @@ export default function RootPage() {
                 <span>Empresas</span>
                 <h2>Empresas para cada etapa da obra</h2>
                 <p>
-                  Materiais, serviços, equipamentos e soluções para construção.
+                  {localizacao.cidade && localizacao.estado
+                    ? `Empresas e parceiros que atendem ${localizacao.cidade} - ${localizacao.estado}.`
+                    : "Parceiros em destaque e empresas da construção civil."}
                 </p>
               </div>
               <Link href="/cadastro/empresa">Cadastrar empresa</Link>
             </div>
 
             <div className="horizontal">
-              {companies.map(([icon, name]) => (
-                <Link href="/cadastro/empresa" className="companyCard" key={name}>
-                  <div className="companyIcon">{icon}</div>
-                  <strong>{name}</strong>
-                  <span>Cadastre ou indique uma empresa</span>
-                  <small>Conhecer →</small>
-                </Link>
-              ))}
+              {empresasDaRegiao.map((empresa) => {
+                const href = empresa.whatsapp
+                  ? `https://wa.me/${empresa.whatsapp}?text=${budgetMessage}`
+                  : "/cadastro/empresa";
+
+                return (
+                  <a
+                    href={href}
+                    target={empresa.whatsapp ? "_blank" : undefined}
+                    rel={empresa.whatsapp ? "noopener noreferrer" : undefined}
+                    className="companyCard"
+                    key={`${empresa.name}-${empresa.whatsapp}`}
+                  >
+                    <div className="companyLogo">
+                      {empresa.logo ? (
+                        <Image
+                          src={empresa.logo}
+                          alt={empresa.name}
+                          width={44}
+                          height={44}
+                        />
+                      ) : (
+                        <span>CT</span>
+                      )}
+                    </div>
+
+                    <strong>{empresa.name}</strong>
+                    <span className="companyCategory">{empresa.category}</span>
+                    <span className="companyLocation">{empresa.location}</span>
+                    <small>
+                      {empresa.badge || "Solicitar orçamento"} →
+                    </small>
+                  </a>
+                );
+              })}
             </div>
           </section>
 
@@ -441,7 +802,7 @@ export default function RootPage() {
         .hero{position:relative;min-height:350px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:12px;padding:24px 22px 0;border-radius:28px;background:linear-gradient(135deg,#075985,#0284c7 50%,#0ea5e9);color:white;box-shadow:0 22px 50px rgba(2,132,199,.22)}.hero:before,.hero:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.14)}.hero:before{width:260px;height:260px;right:-110px;bottom:-110px}.hero:after{width:150px;height:150px;right:-50px;top:-60px;background:rgba(255,255,255,.06)}.heroCopy,.heroVisual{position:relative;z-index:2}.kicker{display:inline-flex;padding:7px 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.1);font-size:.56rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.hero h1{max-width:520px;margin:13px 0 9px;font-size:clamp(1.8rem,8vw,3rem);line-height:.98;letter-spacing:-.055em}.hero p{max-width:520px;margin:0;color:rgba(255,255,255,.83);font-size:.78rem;line-height:1.5}.heroButtons{display:flex;flex-wrap:wrap;gap:8px;margin-top:17px}.primary,.secondary{min-height:42px;display:flex;align-items:center;padding:0 15px;border-radius:13px;font-size:.68rem;font-weight:900;text-decoration:none}.primary{background:white;color:#075985}.secondary{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:white}.heroVisual{min-height:126px}.mascotCircle{position:absolute;right:-4px;bottom:-14px;width:178px;height:178px;display:flex;align-items:flex-end;justify-content:center;border:1px solid rgba(255,255,255,.14);border-radius:50%;background:rgba(255,255,255,.09)}.mascotCircle img{width:174px;height:174px;object-fit:contain;filter:drop-shadow(0 14px 16px rgba(3,59,88,.25))}.nearBadge{position:absolute;left:0;bottom:18px;z-index:3;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.94);color:#075985;font-size:.56rem;font-weight:900;box-shadow:0 8px 20px rgba(3,105,161,.2)}
         .section{margin-top:27px}.sectionTitle span,.heading span,.calcBanner>div:nth-child(2)>span,.indicate span{display:block;margin-bottom:4px;color:var(--blue);font-size:.56rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.sectionTitle h2,.heading h2,.calcBanner h2,.indicate h2{margin:0;font-size:1rem;line-height:1.13;letter-spacing:-.025em}.quickGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:11px}.quick{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;color:#334155;font-size:.54rem;font-weight:800;text-align:center;text-decoration:none}.quick i{width:52px;height:52px;display:grid;place-items:center;border:1px solid #dbeafe;border-radius:17px;background:linear-gradient(#fff,#f0f9ff);color:var(--blue);box-shadow:0 8px 18px rgba(15,23,42,.05);font-style:normal}.quick svg,.audienceIcon svg,.calcIcon svg,.bottomNav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
         .audiences{display:grid;gap:10px;margin-top:24px}.audienceCard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:15px;border:1px solid var(--line);border-radius:20px;background:white;color:inherit;text-decoration:none;box-shadow:0 10px 26px rgba(15,23,42,.055)}.audienceIcon{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:#e0f2fe;color:var(--blue)}.audienceIcon.dark{background:#e2e8f0;color:#334155}.audienceCard div:nth-child(2){display:flex;flex-direction:column}.audienceCard small{font-size:.5rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.audienceCard strong{margin-top:3px;font-size:.75rem;line-height:1.25}.audienceCard p{margin:3px 0 0;color:var(--muted);font-size:.6rem;line-height:1.38}.audienceCard b{color:var(--blue)}
-        .heading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:13px}.heading p{margin:5px 0 0;color:var(--muted);font-size:.66rem}.heading>a{flex-shrink:0;color:var(--blue2);font-size:.6rem;font-weight:900;text-decoration:none}.horizontal{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 16px 8px 1px}.horizontal::-webkit-scrollbar{display:none}.proCard,.companyCard{flex-shrink:0;scroll-snap-align:start;border:1px solid var(--line);border-radius:19px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 8px 22px rgba(15,23,42,.055)}.proCard{width:150px;overflow:hidden}.proCover{height:57px;position:relative;background:linear-gradient(135deg,rgba(2,132,199,.14),rgba(14,165,233,.03)),#f8fafc}.proCover em{position:absolute;top:8px;left:8px;padding:4px 6px;border-radius:999px;background:#fff;color:#64748b;font-size:.42rem;font-style:normal;font-weight:800}.avatar{width:48px;height:48px;margin:-24px 0 7px 11px;position:relative;z-index:2;display:grid;place-items:center;border:4px solid white;border-radius:50%;background:linear-gradient(#cbd5e1,#94a3b8);font-size:1.2rem}.proContent{display:flex;flex-direction:column;align-items:flex-start;padding:0 11px 12px}.proContent strong{font-size:.7rem}.proContent>span{margin-top:2px;color:var(--blue);font-size:.56rem;font-weight:800}.proContent small{margin-top:8px;padding:5px 7px;border:1px solid #bae6fd;border-radius:999px;background:#f0f9ff;color:var(--blue2);font-size:.45rem;font-weight:900}.companyCard{width:142px;min-height:158px;display:flex;flex-direction:column;align-items:flex-start;padding:13px}.companyIcon{width:40px;height:40px;display:grid;place-items:center;margin-bottom:10px;border-radius:13px;background:#f1f5f9;color:#64748b;filter:grayscale(1)}.companyCard strong{min-height:34px;font-size:.67rem;line-height:1.25}.companyCard>span{margin-top:4px;color:#94a3b8;font-size:.5rem;line-height:1.3}.companyCard small{margin-top:auto;padding-top:10px;color:var(--blue2);font-size:.54rem;font-weight:900}
+        .heading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:13px}.heading p{margin:5px 0 0;color:var(--muted);font-size:.66rem}.heading>a{flex-shrink:0;color:var(--blue2);font-size:.6rem;font-weight:900;text-decoration:none}.horizontal{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 16px 8px 1px}.horizontal::-webkit-scrollbar{display:none}.proCard,.companyCard{flex-shrink:0;scroll-snap-align:start;border:1px solid var(--line);border-radius:19px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 8px 22px rgba(15,23,42,.055)}.proCard{width:150px;overflow:hidden}.proCover{height:57px;position:relative;background:linear-gradient(135deg,rgba(2,132,199,.14),rgba(14,165,233,.03)),#f8fafc}.proCover em{position:absolute;top:8px;left:8px;padding:4px 6px;border-radius:999px;background:#fff;color:#64748b;font-size:.42rem;font-style:normal;font-weight:800}.avatar{width:48px;height:48px;margin:-24px 0 7px 11px;position:relative;z-index:2;display:grid;place-items:center;border:4px solid white;border-radius:50%;background:linear-gradient(#cbd5e1,#94a3b8);font-size:1.2rem}.proContent{display:flex;flex-direction:column;align-items:flex-start;padding:0 11px 12px}.proContent strong{font-size:.7rem}.proContent>span{margin-top:2px;color:var(--blue);font-size:.56rem;font-weight:800}.proContent p{min-height:34px;margin:6px 0 0;color:#64748b;font-size:.49rem;line-height:1.35}.proContent small{margin-top:8px;padding:5px 7px;border:1px solid #bae6fd;border-radius:999px;background:#f0f9ff;color:var(--blue2);font-size:.45rem;font-weight:900}.companyCard{width:142px;min-height:182px;display:flex;flex-direction:column;align-items:flex-start;padding:13px}.companyLogo{width:44px;height:44px;display:grid;place-items:center;overflow:hidden;margin-bottom:10px;border:1px solid #dbeafe;border-radius:13px;background:linear-gradient(#eff6ff,#fff);color:var(--blue2);font-size:.65rem;font-weight:900}.companyLogo img{width:100%;height:100%;object-fit:cover}.companyCard strong{min-height:34px;font-size:.67rem;line-height:1.25}.companyCategory{margin-top:2px!important;color:var(--blue)!important;font-size:.52rem!important;font-weight:800}.companyLocation{margin-top:5px!important;color:#94a3b8!important;font-size:.49rem!important;line-height:1.3}.companyCard small{margin-top:auto;padding-top:10px;color:var(--blue2);font-size:.52rem;font-weight:900}
         .calcBanner{display:grid;grid-template-columns:auto 1fr;gap:13px;margin-top:27px;padding:19px;border-radius:24px;background:linear-gradient(135deg,#0c4a6e,#0369a1 52%,#0284c7);color:white;box-shadow:0 18px 38px rgba(3,105,161,.18)}.calcIcon{width:48px;height:48px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:15px;background:rgba(255,255,255,.1)}.calcBanner>div:nth-child(2)>span{color:#bae6fd}.calcBanner h2{color:white}.calcBanner p{margin:5px 0 0;color:rgba(255,255,255,.75);font-size:.62rem;line-height:1.45}.calcBanner>a{grid-column:1/-1;min-height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:white;color:#075985;font-size:.64rem;font-weight:900;text-decoration:none}
         .indicate{display:flex;flex-direction:column;gap:14px;margin-top:18px;padding:19px;border:1px solid #dbeafe;border-radius:24px;background:radial-gradient(circle at right top,rgba(14,165,233,.11),transparent 34%),white}.indicate p{margin:6px 0 0;color:var(--muted);font-size:.64rem;line-height:1.45}.indicate>a{align-self:flex-start;min-height:39px;display:flex;align-items:center;padding:0 13px;border-radius:12px;background:var(--blue);color:white;font-size:.62rem;font-weight:900;text-decoration:none}.footer{padding:28px 0 4px;display:flex;flex-direction:column;align-items:center}.footer strong{font-size:.72rem}.footer span{margin-top:3px;color:#94a3b8;font-size:.53rem}
         .bottomNav{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));z-index:50;width:calc(100% - 20px);max-width:560px;min-height:68px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:7px 6px;border:1px solid rgba(226,232,240,.92);border-radius:22px;background:rgba(255,255,255,.95);box-shadow:0 16px 40px rgba(15,23,42,.16);backdrop-filter:blur(18px)}.bottomNav>a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:15px;color:#94a3b8;font-size:.47rem;font-weight:800;text-decoration:none}.bottomNav>a.active{background:#f0f9ff;color:var(--blue)}.bottomNav svg{width:20px;height:20px}
