@@ -827,6 +827,76 @@ export default function RootPage() {
         .section{margin-top:27px}.sectionTitle span,.heading span,.calcBanner>div:nth-child(2)>span,.indicate span{display:block;margin-bottom:4px;color:var(--blue);font-size:.56rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.sectionTitle h2,.heading h2,.calcBanner h2,.indicate h2{margin:0;font-size:1rem;line-height:1.13;letter-spacing:-.025em}.quickGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:11px}.quick{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;color:#334155;font-size:.54rem;font-weight:800;text-align:center;text-decoration:none}.quick i{width:52px;height:52px;display:grid;place-items:center;border:1px solid #dbeafe;border-radius:17px;background:linear-gradient(#fff,#f0f9ff);color:var(--blue);box-shadow:0 8px 18px rgba(15,23,42,.05);font-style:normal}.quick svg,.audienceIcon svg,.calcIcon svg,.bottomNav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
         .audiences{display:grid;gap:10px;margin-top:24px}.audienceCard{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:15px;border:1px solid var(--line);border-radius:20px;background:white;color:inherit;text-decoration:none;box-shadow:0 10px 26px rgba(15,23,42,.055)}.audienceIcon{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:#e0f2fe;color:var(--blue)}.audienceIcon.dark{background:#e2e8f0;color:#334155}.audienceCard div:nth-child(2){display:flex;flex-direction:column}.audienceCard small{font-size:.5rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.audienceCard strong{margin-top:3px;font-size:.75rem;line-height:1.25}.audienceCard p{margin:3px 0 0;color:var(--muted);font-size:.6rem;line-height:1.38}.audienceCard b{color:var(--blue)}
         .heading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:13px}.heading p{margin:5px 0 0;color:var(--muted);font-size:.66rem}.heading>a{flex-shrink:0;color:var(--blue2);font-size:.6rem;font-weight:900;text-decoration:none}.horizontal{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 16px 8px 1px}.horizontal::-webkit-scrollbar{display:none}.proCard,.companyCard{flex-shrink:0;scroll-snap-align:start;border:1px solid var(--line);border-radius:19px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 8px 22px rgba(15,23,42,.055)}.proCard{width:150px;overflow:hidden}.proCover{height:57px;position:relative;background:linear-gradient(135deg,rgba(2,132,199,.14),rgba(14,165,233,.03)),#f8fafc}.proCover em{position:absolute;top:8px;left:8px;padding:4px 6px;border-radius:999px;background:#fff;color:#64748b;font-size:.42rem;font-style:normal;font-weight:800}.avatar{width:48px;height:48px;margin:-24px 0 7px 11px;position:relative;z-index:2;display:grid;place-items:center;border:4px solid white;border-radius:50%;background:linear-gradient(#cbd5e1,#94a3b8);font-size:1.2rem}.proContent{display:flex;flex-direction:column;align-items:flex-start;padding:0 11px 12px}.proContent strong{font-size:.7rem}.proContent>span{margin-top:2px;color:var(--blue);font-size:.56rem;font-weight:800}.proContent p{min-height:34px;margin:6px 0 0;color:#64748b;font-size:.49rem;line-height:1.35}.proContent small{margin-top:8px;padding:5px 7px;border:1px solid #bae6fd;border-radius:999px;background:#f0f9ff;color:var(--blue2);font-size:.45rem;font-weight:900}.companyCard{width:142px;min-height:182px;display:flex;flex-direction:column;align-items:flex-start;padding:13px}.companyLogo{width:44px;height:44px;display:grid;place-items:center;overflow:hidden;margin-bottom:10px;border:1px solid #dbeafe;border-radius:13px;background:linear-gradient(#eff6ff,#fff);color:var(--blue2);font-size:.65rem;font-weight:900}.companyLogo img{width:100%;height:100%;object-fit:cover}.companyCard strong{min-height:34px;font-size:.67rem;line-height:1.25}.companyCategory{margin-top:2px!important;color:var(--blue)!important;font-size:.52rem!important;font-weight:800}.companyLocation{margin-top:5px!important;color:#94a3b8!important;font-size:.49rem!important;line-height:1.3}.companyCard small{margin-top:auto;padding-top:10px;color:var(--blue2);font-size:.52rem;font-weight:900}
+
+        .emptyCompanyCard{
+          width:220px;
+          min-width:220px;
+          max-width:220px;
+          min-height:182px;
+          flex:0 0 220px;
+          scroll-snap-align:start;
+          display:flex;
+          flex-direction:column;
+          align-items:flex-start;
+          padding:14px;
+          border:1px dashed #bae6fd;
+          border-radius:19px;
+          background:linear-gradient(145deg,#ffffff,#f0f9ff);
+          color:var(--text);
+          text-decoration:none;
+          box-shadow:0 8px 22px rgba(15,23,42,.045);
+          overflow:hidden;
+        }
+
+        .emptyCompanyIcon{
+          width:44px;
+          height:44px;
+          flex:0 0 44px;
+          display:grid;
+          place-items:center;
+          margin-bottom:10px;
+          border-radius:13px;
+          background:#e0f2fe;
+          color:var(--blue);
+        }
+
+        .emptyCompanyIcon svg{
+          display:block;
+          width:22px !important;
+          height:22px !important;
+          max-width:22px !important;
+          max-height:22px !important;
+          fill:none !important;
+          stroke:currentColor !important;
+          stroke-width:1.8;
+          stroke-linecap:round;
+          stroke-linejoin:round;
+        }
+
+        .emptyCompanyCard strong{
+          margin:0;
+          font-size:.68rem;
+          line-height:1.3;
+          color:var(--text);
+        }
+
+        .emptyCompanyCard > span{
+          margin-top:6px;
+          color:#64748b;
+          font-size:.52rem;
+          line-height:1.4;
+          text-decoration:none;
+        }
+
+        .emptyCompanyCard small{
+          margin-top:auto;
+          padding-top:11px;
+          color:var(--blue2);
+          font-size:.54rem;
+          font-weight:900;
+          text-decoration:none;
+        }
+
         .calcBanner{display:grid;grid-template-columns:auto 1fr;gap:13px;margin-top:27px;padding:19px;border-radius:24px;background:linear-gradient(135deg,#0c4a6e,#0369a1 52%,#0284c7);color:white;box-shadow:0 18px 38px rgba(3,105,161,.18)}.calcIcon{width:48px;height:48px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:15px;background:rgba(255,255,255,.1)}.calcBanner>div:nth-child(2)>span{color:#bae6fd}.calcBanner h2{color:white}.calcBanner p{margin:5px 0 0;color:rgba(255,255,255,.75);font-size:.62rem;line-height:1.45}.calcBanner>a{grid-column:1/-1;min-height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;background:white;color:#075985;font-size:.64rem;font-weight:900;text-decoration:none}
         .indicate{display:flex;flex-direction:column;gap:14px;margin-top:18px;padding:19px;border:1px solid #dbeafe;border-radius:24px;background:radial-gradient(circle at right top,rgba(14,165,233,.11),transparent 34%),white}.indicate p{margin:6px 0 0;color:var(--muted);font-size:.64rem;line-height:1.45}.indicate>a{align-self:flex-start;min-height:39px;display:flex;align-items:center;padding:0 13px;border-radius:12px;background:var(--blue);color:white;font-size:.62rem;font-weight:900;text-decoration:none}.footer{padding:28px 0 4px;display:flex;flex-direction:column;align-items:center}.footer strong{font-size:.72rem}.footer span{margin-top:3px;color:#94a3b8;font-size:.53rem}
         .bottomNav{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));z-index:50;width:calc(100% - 20px);max-width:560px;min-height:68px;transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:7px 6px;border:1px solid rgba(226,232,240,.92);border-radius:22px;background:rgba(255,255,255,.95);box-shadow:0 16px 40px rgba(15,23,42,.16);backdrop-filter:blur(18px)}.bottomNav>a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:15px;color:#94a3b8;font-size:.47rem;font-weight:800;text-decoration:none}.bottomNav>a.active{background:#f0f9ff;color:var(--blue)}.bottomNav svg{width:20px;height:20px}
