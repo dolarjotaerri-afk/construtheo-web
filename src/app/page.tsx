@@ -690,13 +690,37 @@ export default function RootPage() {
                 <p>
                   {localizacao.cidade && localizacao.estado
                     ? `Empresas e parceiros que atendem ${localizacao.cidade} - ${localizacao.estado}.`
-                    : "Parceiros em destaque e empresas da construção civil."}
+                    : "Entre ou cadastre-se para ver empresas que atendem sua região."}
                 </p>
               </div>
               <Link href="/cadastro/empresa">Cadastrar empresa</Link>
             </div>
 
             <div className="horizontal">
+              {empresasDaRegiao.length === 0 && (
+                <Link
+                  href={localizacao.cidade && localizacao.estado ? "/indicar" : "/login"}
+                  className="emptyCompanyCard"
+                >
+                  <div className="emptyCompanyIcon"><Icon name="company" /></div>
+                  <strong>
+                    {localizacao.cidade && localizacao.estado
+                      ? "Ainda estamos conectando empresas nessa região"
+                      : "Veja empresas que atendem sua região"}
+                  </strong>
+                  <span>
+                    {localizacao.cidade && localizacao.estado
+                      ? "Indique uma empresa de confiança e ajude a fortalecer a rede."
+                      : "Entre na sua conta para usarmos sua cidade e estado."}
+                  </span>
+                  <small>
+                    {localizacao.cidade && localizacao.estado
+                      ? "Indicar empresa →"
+                      : "Entrar →"}
+                  </small>
+                </Link>
+              )}
+
               {empresasDaRegiao.map((empresa) => {
                 const href = empresa.whatsapp
                   ? `https://wa.me/${empresa.whatsapp}?text=${budgetMessage}`

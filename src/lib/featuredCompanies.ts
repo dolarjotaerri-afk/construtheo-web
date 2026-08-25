@@ -7,6 +7,7 @@ export type FeaturedCompany = {
   badge: string;
   logo: string;
   whatsapp: string;
+  stateWide?: boolean;
 };
 
 export const featuredCompanies: FeaturedCompany[] = [
@@ -23,9 +24,10 @@ export const featuredCompanies: FeaturedCompany[] = [
   {
     name: "DSA Energia Solar",
     category: "Energia solar",
-    location: "São José dos Campos/SP e Região",
-    cities: ["São José dos Campos", "Jacareí", "Igaratá", "Santa Isabel"],
+    location: "Atendimento em todo o estado de SP",
+    cities: [],
     state: "SP",
+    stateWide: true,
     badge: "★ 5.0 Qualidade",
     logo: "/logos/dsa-energia-solar.png",
     whatsapp: "5512997223060",
@@ -43,34 +45,49 @@ export const featuredCompanies: FeaturedCompany[] = [
   {
     name: "Vidraçaria Alvarenga",
     category: "Vidraçaria",
-    location: "São Paulo/SP e Região",
-    cities: ["São Paulo", "Guarulhos", "Arujá", "Santa Isabel"],
+    location: "Atendimento em todo o estado de SP",
+    cities: [],
     state: "SP",
+    stateWide: true,
     badge: "★ 5.0 Qualidade",
     logo: "/logos/vidracaria-alvarenga.png",
     whatsapp: "5511982081051",
   },
 ];
 
-export function getFeaturedCompaniesByLocation(cidade?: string, estado?: string) {
-  if (!cidade && !estado) {
-    return featuredCompanies;
+export function getFeaturedCompaniesByLocation(
+  cidade?: string,
+  estado?: string
+) {
+  const cidadeTratada = cidade?.trim().toLowerCase() || "";
+  const estadoTratado = estado?.trim().toUpperCase() || "";
+
+  // Sem localização não exibimos parceiros fixos para evitar
+  // mostrar empresas de São Paulo para usuários de qualquer região.
+  if (!cidadeTratada && !estadoTratado) {
+    return [];
   }
 
-  const cidadeTratada = cidade?.trim().toLowerCase();
-  const estadoTratado = estado?.trim().toUpperCase();
+  return featuredCompanies.filter((empresa) => {
+    // Se o estado do usuário estiver disponível, precisa ser o mesmo
+    // estado atendido pela empresa.
+    if (estadoTratado && empresa.state !== estadoTratado) {
+      return false;
+    }
 
-  const empresasFiltradas = featuredCompanies.filter((empresa) => {
-    const atendeEstado = estadoTratado ? empresa.state === estadoTratado : true;
+    // Empresas marcadas como estaduais podem aparecer para qualquer
+    // cidade daquele estado.
+    if (empresa.stateWide && estadoTratado === empresa.state) {
+      return true;
+    }
 
-    const atendeCidade = cidadeTratada
-      ? empresa.cities.some(
-          (city) => city.trim().toLowerCase() === cidadeTratada
-        )
-      : true;
+    // Empresas regionais só aparecem nas cidades declaradas.
+    if (!cidadeTratada) {
+      return false;
+    }
 
-    return atendeEstado && atendeCidade;
+    return empresa.cities.some(
+      (city) => city.trim().toLowerCase() === cidadeTratada
+    );
   });
-
-  return empresasFiltradas.length > 0 ? empresasFiltradas : featuredCompanies;
 }
